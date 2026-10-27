@@ -21,7 +21,7 @@ import { ThemeToggle } from '@/components/shell/theme-toggle'
 import { useI18n } from '@/components/providers/i18n-provider'
 import { findPage } from '@/lib/navigation'
 
-export function AppHeader() {
+export function AppHeader({ user }: { user: { name: string; email: string; role: string } }) {
   const pathname = usePathname()
   const { t } = useI18n()
   const page = findPage(pathname)
@@ -60,7 +60,7 @@ export function AppHeader() {
         <LanguageSwitcher />
         <ThemeToggle />
         <NotificationsMenu />
-        <UserMenu />
+        <UserMenu user={user} />
       </div>
     </header>
   )

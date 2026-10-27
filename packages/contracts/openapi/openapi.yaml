@@ -24,8 +24,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /v1/me:
+    get:
+      operationId: getCurrentUser
+      summary: Get the authenticated user
+      tags: [auth]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current verified user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '401':
+          description: Missing or invalid internal credential
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/admin/health:
+    get:
+      operationId: getAdminHealth
+      summary: Check administrator API access
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: Administrator access granted }
+        '401': { description: Missing or invalid credential }
+        '403': { description: Administrator role required }
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
+    CurrentUser:
+      type: object
+      required: [id, email, name, role]
+      properties:
+        id: { type: string }
+        email: { type: string, format: email }
+        name: { type: string }
+        role: { type: string, enum: [user, admin] }
     HealthResponse:
       type: object
       required: [status, service]

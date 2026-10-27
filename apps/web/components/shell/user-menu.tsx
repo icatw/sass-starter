@@ -14,11 +14,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { currentUser } from '@/lib/mock-data/overview'
 import { getInitials } from '@/lib/format'
 import { useI18n } from '@/components/providers/i18n-provider'
+import { authClient } from '@/lib/auth/client'
 
-export function UserMenu() {
+export function UserMenu({ user }: { user: { name: string; email: string; role: string } }) {
   const router = useRouter()
   const { t } = useI18n()
 
@@ -28,14 +28,14 @@ export function UserMenu() {
         render={<Button variant="ghost" size="icon" className="rounded-full" aria-label={t('userMenu.open')} />}
       >
         <Avatar className="size-8">
-          <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
+          <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="flex flex-col gap-0.5">
-            <span className="text-sm font-medium text-foreground">{currentUser.name}</span>
-            <span className="text-xs font-normal">{currentUser.email}</span>
+            <span className="text-sm font-medium text-foreground">{user.name}</span>
+            <span className="text-xs font-normal">{user.email}</span>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
@@ -59,7 +59,18 @@ export function UserMenu() {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem variant="destructive" onClick={() => toast.info(t('userMenu.signOutToast'))}>
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={async () => {
+              const result = await authClient.signOut()
+              if (result.error) {
+                toast.error(t('errors.unknown'))
+                return
+              }
+              router.replace('/login')
+              router.refresh()
+            }}
+          >
             <LogOut />
             {t('userMenu.signOut')}
           </DropdownMenuItem>
