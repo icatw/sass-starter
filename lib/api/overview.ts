@@ -1,3 +1,4 @@
+import { ApiError } from '@/lib/api/errors'
 import { MOCK_NOW } from '@/lib/format'
 import {
   buildRevenueSeries,
@@ -31,8 +32,8 @@ function respond<T>(value: T, latency = LATENCY_MS): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(structuredClone(value)), latency))
 }
 
-function fail(message: string, latency = LATENCY_MS): Promise<never> {
-  return new Promise((_, reject) => setTimeout(() => reject(new Error(message)), latency))
+function fail(error: ApiError, latency = LATENCY_MS): Promise<never> {
+  return new Promise((_, reject) => setTimeout(() => reject(error), latency))
 }
 
 const db = {
@@ -57,8 +58,8 @@ export function getOrders(): Promise<Order[]> {
 
 export function refundOrder(orderId: string): Promise<Order> {
   const order = db.orders.find((item) => item.id === orderId)
-  if (!order) return fail('Order not found')
-  if (order.status !== 'paid') return fail(`Only paid orders can be refunded (current status: ${order.status})`)
+  if (!order) return fail(new ApiError('orderNotFound'))
+  if (order.status !== 'paid') return fail(new ApiError('orderNotRefundable', { status: order.status }))
   order.status = 'refunded'
   return respond(order, 600)
 }
@@ -70,7 +71,7 @@ export function getRegistrations(): Promise<UserRegistration[]> {
 export function inviteUser(input: InviteUserInput): Promise<UserRegistration> {
   const email = input.email.trim().toLowerCase()
   const exists = db.registrations.some((user) => user.email.toLowerCase() === email)
-  if (exists) return fail(`A user with ${email} already exists`, 700)
+  if (exists) return fail(new ApiError('userExists', { email }), 700)
 
   const user: UserRegistration = {
     id: `usr_${Math.random().toString(36).slice(2, 8)}`,
@@ -92,7 +93,7 @@ export function getJobSummary(): Promise<JobSummary> {
 
 export function retryFailedJobs(): Promise<JobSummary> {
   const retried = db.jobs.failedJobs.filter((job) => job.attempts < job.maxAttempts)
-  if (retried.length === 0) return fail('No retryable jobs: all failed jobs reached max attempts', 800)
+  if (retried.length === 0) return fail(new ApiError('noRetryableJobs'), 800)
 
   db.jobs = {
     ...db.jobs,

@@ -10,14 +10,16 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ErrorState } from '@/components/shared/error-state'
 import { InviteUserDialog } from '@/components/overview/invite-user-dialog'
+import { useI18n } from '@/components/providers/i18n-provider'
 import { useRegistrations } from '@/hooks/use-overview-data'
-import { formatRelative, getInitials } from '@/lib/format'
+import { getInitials } from '@/lib/format'
 import type { UserRegistration } from '@/lib/types'
 
 type PlanFilter = 'all' | 'paid' | 'free'
 const VISIBLE_COUNT = 6
 
 export function RecentRegistrations() {
+  const { t, format } = useI18n()
   const { data, error, isLoading, mutate } = useRegistrations()
   const [filter, setFilter] = useState<PlanFilter>('all')
 
@@ -38,8 +40,8 @@ export function RecentRegistrations() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>New registrations</CardTitle>
-        <CardDescription>Latest sign-ups across all organizations</CardDescription>
+        <CardTitle>{t('registrations.title')}</CardTitle>
+        <CardDescription>{t('registrations.description')}</CardDescription>
         <CardAction>
           <InviteUserDialog onInvited={handleInvited} />
         </CardAction>
@@ -47,14 +49,14 @@ export function RecentRegistrations() {
       <CardContent className="flex flex-col gap-3">
         <Tabs value={filter} onValueChange={(value) => setFilter(value as PlanFilter)}>
           <TabsList className="w-full">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="paid">Paid</TabsTrigger>
-            <TabsTrigger value="free">Free</TabsTrigger>
+            <TabsTrigger value="all">{t('registrations.filters.all')}</TabsTrigger>
+            <TabsTrigger value="paid">{t('registrations.filters.paid')}</TabsTrigger>
+            <TabsTrigger value="free">{t('registrations.filters.free')}</TabsTrigger>
           </TabsList>
         </Tabs>
 
         {error ? (
-          <ErrorState message={error.message} onRetry={() => mutate()} />
+          <ErrorState error={error} onRetry={() => mutate()} />
         ) : isLoading || !data ? (
           <ul className="flex flex-col gap-3" aria-busy>
             {Array.from({ length: 5 }, (_, index) => (
@@ -73,8 +75,8 @@ export function RecentRegistrations() {
               <EmptyMedia variant="icon">
                 <UserRound />
               </EmptyMedia>
-              <EmptyTitle>No registrations</EmptyTitle>
-              <EmptyDescription>Nobody matches this plan filter yet.</EmptyDescription>
+              <EmptyTitle>{t('registrations.emptyTitle')}</EmptyTitle>
+              <EmptyDescription>{t('registrations.emptyDescription')}</EmptyDescription>
             </EmptyHeader>
           </Empty>
         ) : (
@@ -87,12 +89,12 @@ export function RecentRegistrations() {
                 <div className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-sm font-medium">{user.name}</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {user.email} · {user.source}
+                    {user.email} · {t(`sources.${user.source}`)}
                   </span>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <Badge variant={user.plan === 'Free' ? 'outline' : 'secondary'}>{user.plan}</Badge>
-                  <span className="text-xs text-muted-foreground tabular-nums">{formatRelative(user.createdAt)}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{format.relative(user.createdAt)}</span>
                 </div>
               </li>
             ))}

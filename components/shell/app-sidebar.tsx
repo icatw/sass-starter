@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { navGroups, type NavItem } from '@/lib/navigation'
 import { SidebarUsageMeter } from '@/components/shell/sidebar-usage-meter'
+import { useI18n } from '@/components/providers/i18n-provider'
 
 function isActivePath(pathname: string, href: string) {
   if (href === '/') return pathname === '/'
@@ -39,6 +40,7 @@ function isActivePath(pathname: string, href: string) {
 function NavItemWithChildren({ item, pathname }: { item: NavItem; pathname: string }) {
   const { state, isMobile } = useSidebar()
   const children = item.children ?? []
+  const { t } = useI18n()
   const groupActive = isActivePath(pathname, item.href)
 
   if (state === 'collapsed' && !isMobile) {
@@ -47,14 +49,14 @@ function NavItemWithChildren({ item, pathname }: { item: NavItem; pathname: stri
         <DropdownMenu>
           <DropdownMenuTrigger render={<SidebarMenuButton isActive={groupActive} />}>
             <item.icon />
-            <span>{item.title}</span>
+            <span>{t(`nav.items.${item.key}.title`)}</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="right" align="start" className="min-w-44">
             <DropdownMenuGroup>
-              <DropdownMenuLabel>{item.title}</DropdownMenuLabel>
+              <DropdownMenuLabel>{t(`nav.items.${item.key}.title`)}</DropdownMenuLabel>
               {children.map((child) => (
                 <DropdownMenuItem key={child.href} render={<Link href={child.href} />}>
-                  {child.title}
+                  {t(`nav.items.${child.key}.title`)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuGroup>
@@ -68,7 +70,7 @@ function NavItemWithChildren({ item, pathname }: { item: NavItem; pathname: stri
     <Collapsible defaultOpen={groupActive} render={<SidebarMenuItem />}>
       <CollapsibleTrigger render={<SidebarMenuButton />}>
         <item.icon />
-        <span>{item.title}</span>
+        <span>{t(`nav.items.${item.key}.title`)}</span>
         <ChevronRight className="ml-auto transition-transform duration-200 group-data-[panel-open]/menu-button:rotate-90" />
       </CollapsibleTrigger>
       <CollapsibleContent>
@@ -76,7 +78,7 @@ function NavItemWithChildren({ item, pathname }: { item: NavItem; pathname: stri
           {children.map((child) => (
             <SidebarMenuSubItem key={child.href}>
               <SidebarMenuSubButton isActive={pathname === child.href} render={<Link href={child.href} />}>
-                <span>{child.title}</span>
+                <span>{t(`nav.items.${child.key}.title`)}</span>
               </SidebarMenuSubButton>
             </SidebarMenuSubItem>
           ))}
@@ -88,19 +90,20 @@ function NavItemWithChildren({ item, pathname }: { item: NavItem; pathname: stri
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const { t } = useI18n()
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" tooltip="SaaS Foundry" render={<Link href="/" />}>
+            <SidebarMenuButton size="lg" tooltip={t('app.name')} render={<Link href="/" />}>
               <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
                 <Boxes />
               </span>
               <span className="flex min-w-0 flex-col leading-tight">
-                <span className="truncate font-semibold">SaaS Foundry</span>
-                <span className="truncate text-xs text-muted-foreground">Starter Kit · Development</span>
+                <span className="truncate font-semibold">{t('app.name')}</span>
+                <span className="truncate text-xs text-muted-foreground">{t('app.tagline')}</span>
               </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -109,8 +112,8 @@ export function AppSidebar() {
 
       <SidebarContent>
         {navGroups.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+          <SidebarGroup key={group.key}>
+            <SidebarGroupLabel>{t(`nav.groups.${group.key}`)}</SidebarGroupLabel>
             <SidebarMenu>
               {group.items.map((item) =>
                 item.children ? (
@@ -119,11 +122,11 @@ export function AppSidebar() {
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       isActive={isActivePath(pathname, item.href)}
-                      tooltip={item.title}
+                      tooltip={t(`nav.items.${item.key}.title`)}
                       render={<Link href={item.href} />}
                     >
                       <item.icon />
-                      <span>{item.title}</span>
+                      <span>{t(`nav.items.${item.key}.title`)}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ),

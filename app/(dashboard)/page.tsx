@@ -7,15 +7,22 @@ import { RecentRegistrations } from '@/components/overview/recent-registrations'
 import { JobStatusSummary } from '@/components/overview/job-status-summary'
 import { SystemStatus } from '@/components/overview/system-status'
 import { OverviewActions } from '@/components/overview/overview-actions'
+import { getI18n } from '@/lib/i18n/server'
 
-export const metadata: Metadata = { title: 'Overview' }
+export async function generateMetadata(): Promise<Metadata> {
+  const { messages } = await getI18n()
+  return { title: messages.nav.items.overview.title }
+}
 
-export default function OverviewPage() {
+export default async function OverviewPage() {
+  const { messages } = await getI18n()
+  const copy = messages.nav.items.overview
+
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6 lg:p-8">
       <PageHeader
-        title="Overview"
-        description="Revenue, growth, and platform health for your workspace."
+        title={copy.title}
+        description={copy.description}
         actions={<OverviewActions />}
       />
       <KpiCards />

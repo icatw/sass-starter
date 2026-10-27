@@ -9,10 +9,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { useNotifications } from '@/hooks/use-overview-data'
 import { markNotificationsRead } from '@/lib/api/overview'
-import { formatRelative } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/components/providers/i18n-provider'
 
 export function NotificationsMenu() {
+  const { t, format } = useI18n()
   const { data, isLoading, mutate } = useNotifications()
   const unread = data?.filter((item) => !item.read) ?? []
 
@@ -32,7 +33,9 @@ export function NotificationsMenu() {
             variant="ghost"
             size="icon"
             className="relative"
-            aria-label={unread.length ? `Notifications, ${unread.length} unread` : 'Notifications'}
+            aria-label={
+              unread.length ? t('notifications.ariaUnread', { count: unread.length }) : t('notifications.aria')
+            }
           />
         }
       >
@@ -43,9 +46,9 @@ export function NotificationsMenu() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 gap-0 p-0">
         <div className="flex items-center justify-between px-4 py-3">
-          <p className="text-sm font-medium">Notifications</p>
+          <p className="text-sm font-medium">{t('notifications.title')}</p>
           <Button variant="ghost" size="xs" onClick={markAllRead} disabled={unread.length === 0}>
-            Mark all read
+            {t('notifications.markAllRead')}
           </Button>
         </div>
         <Separator />
@@ -67,9 +70,13 @@ export function NotificationsMenu() {
                     className={cn('mt-1.5 size-2 shrink-0 rounded-full', item.read ? 'bg-transparent' : 'bg-primary')}
                   />
                   <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className={cn('text-sm', !item.read && 'font-medium')}>{item.title}</span>
-                    <span className="text-xs text-muted-foreground">{item.description}</span>
-                    <span className="text-xs text-muted-foreground">{formatRelative(item.createdAt)}</span>
+                    <span className={cn('text-sm', !item.read && 'font-medium')}>
+                      {t(`notifications.items.${item.kind}.title`, item.params)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {t(`notifications.items.${item.kind}.description`, item.params)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{format.relative(item.createdAt)}</span>
                   </span>
                 </Link>
               </li>
@@ -78,8 +85,8 @@ export function NotificationsMenu() {
         ) : (
           <Empty className="py-8">
             <EmptyHeader>
-              <EmptyTitle>All caught up</EmptyTitle>
-              <EmptyDescription>New alerts about billing, jobs, and services will appear here.</EmptyDescription>
+              <EmptyTitle>{t('notifications.emptyTitle')}</EmptyTitle>
+              <EmptyDescription>{t('notifications.emptyDescription')}</EmptyDescription>
             </EmptyHeader>
           </Empty>
         )}

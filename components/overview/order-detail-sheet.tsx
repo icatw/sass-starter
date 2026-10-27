@@ -12,7 +12,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { OrderStatusBadge } from '@/components/overview/order-status'
-import { formatCents, formatDateTime } from '@/lib/format'
+import { useI18n } from '@/components/providers/i18n-provider'
 import type { Order } from '@/lib/types'
 
 interface OrderDetailSheetProps {
@@ -22,6 +22,8 @@ interface OrderDetailSheetProps {
 }
 
 export function OrderDetailSheet({ order, onOpenChange, onRefund }: OrderDetailSheetProps) {
+  const { t, format } = useI18n()
+
   return (
     <Sheet open={order !== null} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-md">
@@ -29,33 +31,39 @@ export function OrderDetailSheet({ order, onOpenChange, onRefund }: OrderDetailS
           <>
             <SheetHeader>
               <SheetTitle className="font-mono">{order.invoiceNumber}</SheetTitle>
-              <SheetDescription>Created {formatDateTime(order.createdAt)}</SheetDescription>
+              <SheetDescription>{t('orderDetail.created', { date: format.dateTime(order.createdAt) })}</SheetDescription>
             </SheetHeader>
             <div className="flex flex-col gap-6 px-4">
               <div className="flex items-end justify-between">
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground">Amount</span>
-                  <span className="font-mono text-2xl font-semibold tabular-nums">{formatCents(order.amount)}</span>
+                  <span className="text-xs text-muted-foreground">{t('orderDetail.amount')}</span>
+                  <span className="font-mono text-2xl font-semibold tabular-nums">{format.cents(order.amount)}</span>
                 </div>
                 <OrderStatusBadge status={order.status} />
               </div>
               <Separator />
               <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
-                <DetailRow label="Customer" value={order.customer.name} />
-                <DetailRow label="Email" value={order.customer.email} />
-                <DetailRow label="Organization" value={order.organization} />
-                <DetailRow label="Plan" value={`${order.plan} · ${order.interval === 'yearly' ? 'Yearly' : 'Monthly'}`} />
-                <DetailRow label="Payment method" value={order.paymentMethod} />
-                <DetailRow label="Order ID" value={<span className="font-mono text-xs">{order.id}</span>} />
+                <DetailRow label={t('orderDetail.customer')} value={order.customer.name} />
+                <DetailRow label={t('orderDetail.email')} value={order.customer.email} />
+                <DetailRow label={t('orderDetail.organization')} value={order.organization} />
+                <DetailRow
+                  label={t('orderDetail.plan')}
+                  value={`${order.plan} · ${t(`intervals.${order.interval}`)}`}
+                />
+                <DetailRow label={t('orderDetail.paymentMethod')} value={order.paymentMethod} />
+                <DetailRow
+                  label={t('orderDetail.orderId')}
+                  value={<span className="font-mono text-xs">{order.id}</span>}
+                />
               </dl>
             </div>
             <SheetFooter>
               <Button variant="outline" disabled={order.status !== 'paid'} onClick={() => onRefund(order)}>
                 <Undo2 data-icon="inline-start" />
-                Refund order
+                {t('orderDetail.refundOrder')}
               </Button>
               {order.status !== 'paid' && (
-                <p className="text-xs text-muted-foreground">Only paid orders can be refunded.</p>
+                <p className="text-xs text-muted-foreground">{t('orderDetail.onlyPaid')}</p>
               )}
             </SheetFooter>
           </>

@@ -1,14 +1,19 @@
+'use client'
+
 import { StatusBadge, type StatusTone } from '@/components/shared/status-badge'
+import { useI18n } from '@/components/providers/i18n-provider'
 import type { OrderStatus } from '@/lib/types'
 
-export const ORDER_STATUS: Record<OrderStatus, { label: string; tone: StatusTone }> = {
-  paid: { label: 'Paid', tone: 'success' },
-  pending: { label: 'Pending', tone: 'warning' },
-  failed: { label: 'Failed', tone: 'danger' },
-  refunded: { label: 'Refunded', tone: 'neutral' },
+export const ORDER_STATUSES: OrderStatus[] = ['paid', 'pending', 'failed', 'refunded']
+
+const ORDER_STATUS_TONE: Record<OrderStatus, StatusTone> = {
+  paid: 'success',
+  pending: 'warning',
+  failed: 'danger',
+  refunded: 'neutral',
 }
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  const config = ORDER_STATUS[status]
-  return <StatusBadge tone={config.tone}>{config.label}</StatusBadge>
+  const { t } = useI18n()
+  return <StatusBadge tone={ORDER_STATUS_TONE[status]}>{t(`orderStatus.${status}`)}</StatusBadge>
 }

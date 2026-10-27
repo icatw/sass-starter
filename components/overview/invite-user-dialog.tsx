@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { UserPlus } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -19,38 +19,39 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
+import { useI18n } from '@/components/providers/i18n-provider'
+import { translateError } from '@/components/shared/error-state'
 import { inviteUser } from '@/lib/api/overview'
 import type { InviteUserInput, UserRegistration, UserRole } from '@/lib/types'
 
-const ROLES: { value: UserRole; label: string }[] = [
-  { value: 'Member', label: 'Member' },
-  { value: 'Admin', label: 'Admin' },
-  { value: 'Owner', label: 'Owner' },
-]
+const ROLES: UserRole[] = ['Member', 'Admin', 'Owner']
 
 const EMPTY_FORM: InviteUserInput = { name: '', email: '', organization: '', role: 'Member' }
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-type FormErrors = Partial<Record<keyof InviteUserInput, string>>
+type ValidatedField = 'name' | 'email' | 'organization'
+type FormErrors = Partial<Record<ValidatedField, true>>
 
 function validate(values: InviteUserInput): FormErrors {
   const errors: FormErrors = {}
-  if (values.name.trim().length < 2) errors.name = 'Enter at least 2 characters.'
-  if (!EMAIL_PATTERN.test(values.email.trim())) errors.email = 'Enter a valid email address.'
-  if (!values.organization.trim()) errors.organization = 'Organization is required.'
+  if (values.name.trim().length < 2) errors.name = true
+  if (!EMAIL_PATTERN.test(values.email.trim())) errors.email = true
+  if (!values.organization.trim()) errors.organization = true
   return errors
 }
 
 export function InviteUserDialog({ onInvited }: { onInvited: (user: UserRegistration) => void }) {
+  const { t } = useI18n()
+  const roleItems = useMemo(() => ROLES.map((value) => ({ value, label: t(`roles.${value}`) })), [t])
   const [open, setOpen] = useState(false)
   const [values, setValues] = useState<InviteUserInput>(EMPTY_FORM)
   const [errors, setErrors] = useState<FormErrors>({})
-  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<unknown>(null)
   const [pending, setPending] = useState(false)
 
   function update<K extends keyof InviteUserInput>(key: K, value: InviteUserInput[K]) {
     setValues((prev) => ({ ...prev, [key]: value }))
-    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }))
+    if (key !== 'role' && errors[key as ValidatedField]) setErrors((prev) => ({ ...prev, [key]: undefined }))
   }
 
   function handleOpenChange(next: boolean) {
@@ -74,11 +75,13 @@ export function InviteUserDialog({ onInvited }: { onInvited: (user: UserRegistra
     try {
       const user = await inviteUser(values)
       onInvited(user)
-      toast.success('Invitation sent', { description: `${user.name} will receive an email at ${user.email}` })
+      toast.success(t('invite.success'), {
+        description: t('invite.successDescription', { name: user.name, email: user.email }),
+      })
       setPending(false)
       handleOpenChange(false)
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Something went wrong')
+      setSubmitError(error)
       setPending(false)
     }
   }
@@ -87,69 +90,69 @@ export function InviteUserDialog({ onInvited }: { onInvited: (user: UserRegistra
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
         <UserPlus data-icon="inline-start" />
-        Invite
+        {t('invite.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
           <DialogHeader>
-            <DialogTitle>Invite a user</DialogTitle>
-            <DialogDescription>They will get an email with a link to join the workspace.</DialogDescription>
+            <DialogTitle>{t('invite.title')}</DialogTitle>
+            <DialogDescription>{t('invite.description')}</DialogDescription>
           </DialogHeader>
 
-          {submitError && (
+          {submitError != null && (
             <Alert variant="destructive">
-              <AlertDescription>{submitError}</AlertDescription>
+              <AlertDescription>{translateError(t, submitError)}</AlertDescription>
             </Alert>
           )}
 
           <FieldGroup>
             <Field data-invalid={!!errors.name || undefined}>
-              <FieldLabel htmlFor="invite-name">Full name</FieldLabel>
+              <FieldLabel htmlFor="invite-name">{t('invite.name')}</FieldLabel>
               <Input
                 id="invite-name"
                 autoComplete="name"
-                placeholder="Ada Lovelace"
+                placeholder={t('invite.namePlaceholder')}
                 value={values.name}
                 aria-invalid={!!errors.name || undefined}
                 onChange={(event) => update('name', event.target.value)}
               />
-              {errors.name && <FieldError>{errors.name}</FieldError>}
+              {errors.name && <FieldError>{t('invite.validation.name')}</FieldError>}
             </Field>
             <Field data-invalid={!!errors.email || undefined}>
-              <FieldLabel htmlFor="invite-email">Email</FieldLabel>
+              <FieldLabel htmlFor="invite-email">{t('invite.email')}</FieldLabel>
               <Input
                 id="invite-email"
                 type="email"
                 autoComplete="email"
-                placeholder="ada@company.com"
+                placeholder={t('invite.emailPlaceholder')}
                 value={values.email}
                 aria-invalid={!!errors.email || undefined}
                 onChange={(event) => update('email', event.target.value)}
               />
-              {errors.email && <FieldError>{errors.email}</FieldError>}
+              {errors.email && <FieldError>{t('invite.validation.email')}</FieldError>}
             </Field>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_8rem]">
               <Field data-invalid={!!errors.organization || undefined}>
-                <FieldLabel htmlFor="invite-org">Organization</FieldLabel>
+                <FieldLabel htmlFor="invite-org">{t('invite.organization')}</FieldLabel>
                 <Input
                   id="invite-org"
                   autoComplete="organization"
-                  placeholder="Acme Inc."
+                  placeholder={t('invite.organizationPlaceholder')}
                   value={values.organization}
                   aria-invalid={!!errors.organization || undefined}
                   onChange={(event) => update('organization', event.target.value)}
                 />
-                {errors.organization && <FieldError>{errors.organization}</FieldError>}
+                {errors.organization && <FieldError>{t('invite.validation.organization')}</FieldError>}
               </Field>
               <Field>
-                <FieldLabel htmlFor="invite-role">Role</FieldLabel>
-                <Select items={ROLES} value={values.role} onValueChange={(value) => value && update('role', value as UserRole)}>
+                <FieldLabel htmlFor="invite-role">{t('invite.role')}</FieldLabel>
+                <Select items={roleItems} value={values.role} onValueChange={(value) => value && update('role', value as UserRole)}>
                   <SelectTrigger id="invite-role" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {ROLES.map((role) => (
+                      {roleItems.map((role) => (
                         <SelectItem key={role.value} value={role.value}>
                           {role.label}
                         </SelectItem>
@@ -162,10 +165,10 @@ export function InviteUserDialog({ onInvited }: { onInvited: (user: UserRegistra
           </FieldGroup>
 
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" disabled={pending} />}>Cancel</DialogClose>
+            <DialogClose render={<Button type="button" variant="outline" disabled={pending} />}>{t('common.cancel')}</DialogClose>
             <Button type="submit" disabled={pending}>
               {pending && <Spinner data-icon="inline-start" />}
-              Send invite
+              {t('invite.submit')}
             </Button>
           </DialogFooter>
         </form>

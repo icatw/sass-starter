@@ -4,12 +4,12 @@ export type MetricFormat = 'number' | 'currency' | 'compact'
 
 export interface Kpi {
   id: 'total-users' | 'mrr' | 'active-subscriptions' | 'usage'
-  label: string
   value: number
   format: MetricFormat
   /** Percentage change versus the previous period, e.g. 12.4 = +12.4% */
   change: number
-  caption: string
+  /** Values interpolated into the localized caption (`kpi.<id>.caption`). */
+  captionParams: Record<string, { value: number; format: MetricFormat }>
   href: string
 }
 
@@ -73,9 +73,10 @@ export interface InviteUserInput {
 
 export type JobStatus = 'queued' | 'running' | 'completed' | 'failed'
 
+export type QueueName = 'emails' | 'ai-inference' | 'billing-sync' | 'exports'
+
 export interface JobQueue {
-  name: string
-  description: string
+  name: QueueName
   counts: Record<JobStatus, number>
 }
 
@@ -97,9 +98,11 @@ export interface JobSummary {
 
 export type ServiceHealth = 'operational' | 'degraded' | 'outage'
 
+export type ServiceId = 'web' | 'api' | 'ai' | 'db' | 'queue' | 'payments'
+
 export interface ServiceStatus {
-  id: string
-  name: string
+  id: ServiceId
+  /** Tech stack label, e.g. "Go · Gin". Not translated. */
   description: string
   health: ServiceHealth
   latencyMs: number
@@ -112,10 +115,13 @@ export interface SystemStatus {
   checkedAt: string
 }
 
+export type NotificationKind = 'aiLatency' | 'jobsFailed' | 'newSubscription' | 'usageReport'
+
 export interface AppNotification {
   id: string
-  title: string
-  description: string
+  /** Selects the localized template under `notifications.items.<kind>`. */
+  kind: NotificationKind
+  params: Record<string, string | number>
   href: string
   createdAt: string
   read: boolean

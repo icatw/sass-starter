@@ -15,10 +15,12 @@ import {
 } from '@/components/ui/command'
 import { Kbd, KbdGroup } from '@/components/ui/kbd'
 import { navGroups } from '@/lib/navigation'
+import { useI18n } from '@/components/providers/i18n-provider'
 
 export function CommandSearch() {
   const [open, setOpen] = React.useState(false)
   const router = useRouter()
+  const { t } = useI18n()
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -42,47 +44,66 @@ export function CommandSearch() {
         variant="outline"
         onClick={() => setOpen(true)}
         className="hidden w-64 justify-start text-muted-foreground md:flex"
-        aria-label="Search pages"
+        aria-label={t('header.searchPages')}
       >
         <Search data-icon="inline-start" />
-        <span className="flex-1 text-left">Search...</span>
+        <span className="flex-1 text-left">{t('header.search')}</span>
         <KbdGroup>
-          <Kbd>⌘</Kbd>
+          <Kbd>Ctrl</Kbd>
           <Kbd>K</Kbd>
         </KbdGroup>
       </Button>
-      <Button variant="ghost" size="icon" onClick={() => setOpen(true)} className="md:hidden" aria-label="Search pages">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setOpen(true)}
+        className="md:hidden"
+        aria-label={t('header.searchPages')}
+      >
         <Search />
       </Button>
 
-      <CommandDialog open={open} onOpenChange={setOpen} title="Search" description="Jump to any page in the dashboard">
+      <CommandDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={t('header.searchTitle')}
+        description={t('header.searchDescription')}
+      >
         <Command>
-          <CommandInput placeholder="Search pages and modules..." />
+          <CommandInput placeholder={t('header.searchPlaceholder')} />
           <CommandList>
-            <CommandEmpty>No matching pages.</CommandEmpty>
+            <CommandEmpty>{t('header.searchEmpty')}</CommandEmpty>
             {navGroups.map((group) => (
-              <CommandGroup key={group.label} heading={group.label}>
-                {group.items.flatMap((item) =>
-                  item.children
-                    ? item.children.map((child) => (
+              <CommandGroup key={group.key} heading={t(`nav.groups.${group.key}`)}>
+                {group.items.flatMap((item) => {
+                  const itemTitle = t(`nav.items.${item.key}.title`)
+                  return item.children
+                    ? item.children.map((child) => {
+                        const childTitle = t(`nav.items.${child.key}.title`)
+                        return (
+                          <CommandItem
+                            key={child.href}
+                            value={`${itemTitle} ${childTitle} ${child.href}`}
+                            onSelect={() => navigate(child.href)}
+                          >
+                            <item.icon />
+                            <span>
+                              {itemTitle} / {childTitle}
+                            </span>
+                          </CommandItem>
+                        )
+                      })
+                    : [
                         <CommandItem
-                          key={child.href}
-                          value={`${item.title} ${child.title}`}
-                          onSelect={() => navigate(child.href)}
+                          key={item.href}
+                          value={`${itemTitle} ${item.href}`}
+                          onSelect={() => navigate(item.href)}
                         >
                           <item.icon />
-                          <span>
-                            {item.title} / {child.title}
-                          </span>
-                        </CommandItem>
-                      ))
-                    : [
-                        <CommandItem key={item.href} value={item.title} onSelect={() => navigate(item.href)}>
-                          <item.icon />
-                          <span>{item.title}</span>
+                          <span>{itemTitle}</span>
                         </CommandItem>,
-                      ],
-                )}
+                      ]
+                })}
               </CommandGroup>
             ))}
           </CommandList>

@@ -33,10 +33,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ErrorState } from '@/components/shared/error-state'
 import { OrderDetailSheet } from '@/components/overview/order-detail-sheet'
-import { OrderStatusBadge, ORDER_STATUS } from '@/components/overview/order-status'
+import { OrderStatusBadge, ORDER_STATUSES } from '@/components/overview/order-status'
 import { RefundOrderDialog } from '@/components/overview/refund-order-dialog'
+import { useI18n } from '@/components/providers/i18n-provider'
 import { useOrders } from '@/hooks/use-overview-data'
-import { formatCents, formatRelative } from '@/lib/format'
 import type { Order, OrderStatus } from '@/lib/types'
 
 const PAGE_SIZE = 6
@@ -45,12 +45,15 @@ type SortKey = 'createdAt' | 'amount'
 type SortDirection = 'asc' | 'desc'
 type StatusFilter = OrderStatus | 'all'
 
-const STATUS_ITEMS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'All statuses' },
-  ...(Object.keys(ORDER_STATUS) as OrderStatus[]).map((value) => ({ value, label: ORDER_STATUS[value].label })),
-]
-
 export function RecentOrders() {
+  const { t, format } = useI18n()
+  const statusItems = useMemo<{ value: StatusFilter; label: string }[]>(
+    () => [
+      { value: 'all', label: t('orders.allStatuses') },
+      ...ORDER_STATUSES.map((value) => ({ value, label: t(`orderStatus.${value}`) })),
+    ],
+    [t],
+  )
   const { data, error, isLoading, mutate } = useOrders()
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<StatusFilter>('all')
@@ -89,20 +92,20 @@ export function RecentOrders() {
   async function copyInvoice(order: Order) {
     try {
       await navigator.clipboard.writeText(order.invoiceNumber)
-      toast.success('Invoice number copied', { description: order.invoiceNumber })
+      toast.success(t('orders.copied'), { description: order.invoiceNumber })
     } catch {
-      toast.error('Clipboard unavailable', { description: order.invoiceNumber })
+      toast.error(t('orders.clipboardUnavailable'), { description: order.invoiceNumber })
     }
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent orders</CardTitle>
-        <CardDescription>Invoices generated in the last 30 days</CardDescription>
+        <CardTitle>{t('orders.title')}</CardTitle>
+        <CardDescription>{t('orders.description')}</CardDescription>
         <CardAction>
           <Button variant="ghost" size="sm" render={<Link href="/billing/orders" />} nativeButton={false}>
-            View all
+            {t('common.viewAll')}
             <ChevronRight data-icon="inline-end" />
           </Button>
         </CardAction>
@@ -111,8 +114,8 @@ export function RecentOrders() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <InputGroup className="sm:max-w-xs">
             <InputGroupInput
-              placeholder="Search invoice, customer, org..."
-              aria-label="Search orders"
+              placeholder={t('orders.searchPlaceholder')}
+              aria-label={t('orders.searchAria')}
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value)
@@ -124,19 +127,19 @@ export function RecentOrders() {
             </InputGroupAddon>
           </InputGroup>
           <Select
-            items={STATUS_ITEMS}
+            items={statusItems}
             value={status}
             onValueChange={(value) => {
               setStatus((value as StatusFilter | null) ?? 'all')
               setPage(1)
             }}
           >
-            <SelectTrigger className="w-full sm:w-40" aria-label="Filter by status">
+            <SelectTrigger className="w-full sm:w-40" aria-label={t('orders.filterAria')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {STATUS_ITEMS.map((item) => (
+                {statusItems.map((item) => (
                   <SelectItem key={item.value} value={item.value}>
                     {item.label}
                   </SelectItem>
@@ -147,24 +150,24 @@ export function RecentOrders() {
         </div>
 
         {error ? (
-          <ErrorState message={error.message} onRetry={() => mutate()} />
+          <ErrorState error={error} onRetry={() => mutate()} />
         ) : (
           <div className="overflow-hidden rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
-                  <TableHead className="pl-3">Invoice</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="hidden md:table-cell">Plan</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="pl-3">{t('orders.columns.invoice')}</TableHead>
+                  <TableHead>{t('orders.columns.customer')}</TableHead>
+                  <TableHead className="hidden md:table-cell">{t('orders.columns.plan')}</TableHead>
+                  <TableHead>{t('orders.columns.status')}</TableHead>
                   <TableHead className="text-right">
-                    <SortButton label="Amount" active={sort.key === 'amount'} direction={sort.direction} onClick={() => toggleSort('amount')} align="end" />
+                    <SortButton label={t('orders.columns.amount')} active={sort.key === 'amount'} direction={sort.direction} onClick={() => toggleSort('amount')} align="end" />
                   </TableHead>
                   <TableHead className="hidden lg:table-cell">
-                    <SortButton label="Date" active={sort.key === 'createdAt'} direction={sort.direction} onClick={() => toggleSort('createdAt')} />
+                    <SortButton label={t('orders.columns.date')} active={sort.key === 'createdAt'} direction={sort.direction} onClick={() => toggleSort('createdAt')} />
                   </TableHead>
                   <TableHead className="w-10 pr-3">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">{t('orders.columns.actions')}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -185,8 +188,8 @@ export function RecentOrders() {
                           <EmptyMedia variant="icon">
                             <Receipt />
                           </EmptyMedia>
-                          <EmptyTitle>No orders found</EmptyTitle>
-                          <EmptyDescription>Try a different search term or status filter.</EmptyDescription>
+                          <EmptyTitle>{t('orders.emptyTitle')}</EmptyTitle>
+                          <EmptyDescription>{t('orders.emptyDescription')}</EmptyDescription>
                         </EmptyHeader>
                         <Button
                           variant="outline"
@@ -196,7 +199,7 @@ export function RecentOrders() {
                             setStatus('all')
                           }}
                         >
-                          Clear filters
+                          {t('orders.clearFilters')}
                         </Button>
                       </Empty>
                     </TableCell>
@@ -212,17 +215,17 @@ export function RecentOrders() {
                         </div>
                       </TableCell>
                       <TableCell className="hidden text-muted-foreground md:table-cell">
-                        {order.plan} · {order.interval === 'yearly' ? 'yr' : 'mo'}
+                        {order.plan} · {t(`orders.intervalShort.${order.interval}`)}
                       </TableCell>
                       <TableCell>
                         <OrderStatusBadge status={order.status} />
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">{formatCents(order.amount)}</TableCell>
-                      <TableCell className="hidden text-muted-foreground lg:table-cell">{formatRelative(order.createdAt)}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{format.cents(order.amount)}</TableCell>
+                      <TableCell className="hidden text-muted-foreground lg:table-cell">{format.relative(order.createdAt)}</TableCell>
                       <TableCell className="pr-3" onClick={(event) => event.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger
-                            render={<Button variant="ghost" size="icon-sm" aria-label={`Actions for ${order.invoiceNumber}`} />}
+                            render={<Button variant="ghost" size="icon-sm" aria-label={t('orders.actionsFor', { invoice: order.invoiceNumber })} />}
                           >
                             <MoreHorizontal />
                           </DropdownMenuTrigger>
@@ -230,11 +233,11 @@ export function RecentOrders() {
                             <DropdownMenuGroup>
                               <DropdownMenuItem onClick={() => setDetailOrder(order)}>
                                 <Eye />
-                                View details
+                                {t('orders.viewDetails')}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => copyInvoice(order)}>
                                 <Copy />
-                                Copy invoice no.
+                                {t('orders.copyInvoice')}
                               </DropdownMenuItem>
                             </DropdownMenuGroup>
                             <DropdownMenuSeparator />
@@ -245,7 +248,7 @@ export function RecentOrders() {
                                 onClick={() => setRefundTarget(order)}
                               >
                                 <Undo2 />
-                                Refund
+                                {t('orders.refund')}
                               </DropdownMenuItem>
                             </DropdownMenuGroup>
                           </DropdownMenuContent>
@@ -263,17 +266,21 @@ export function RecentOrders() {
         <CardFooter className="justify-between border-t text-xs text-muted-foreground">
           <span className="tabular-nums">
             {filtered.length === 0
-              ? '0 orders'
-              : `${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, filtered.length)} of ${filtered.length} orders`}
+              ? t('orders.empty')
+              : t('orders.range', {
+                  from: (currentPage - 1) * PAGE_SIZE + 1,
+                  to: Math.min(currentPage * PAGE_SIZE, filtered.length),
+                  total: filtered.length,
+                })}
           </span>
           <div className="flex items-center gap-2">
             <span className="tabular-nums">
-              Page {currentPage} of {pageCount}
+              {t('orders.page', { page: currentPage, count: pageCount })}
             </span>
             <Button
               variant="outline"
               size="icon-sm"
-              aria-label="Previous page"
+              aria-label={t('orders.previousPage')}
               disabled={currentPage <= 1}
               onClick={() => setPage(currentPage - 1)}
             >
@@ -282,7 +289,7 @@ export function RecentOrders() {
             <Button
               variant="outline"
               size="icon-sm"
-              aria-label="Next page"
+              aria-label={t('orders.nextPage')}
               disabled={currentPage >= pageCount}
               onClick={() => setPage(currentPage + 1)}
             >
@@ -315,6 +322,7 @@ interface SortButtonProps {
 }
 
 function SortButton({ label, active, direction, onClick, align = 'start' }: SortButtonProps) {
+  const { t } = useI18n()
   const Icon = !active ? ArrowUpDown : direction === 'asc' ? ArrowUp : ArrowDown
   return (
     <Button
@@ -322,7 +330,10 @@ function SortButton({ label, active, direction, onClick, align = 'start' }: Sort
       size="xs"
       onClick={onClick}
       className={align === 'end' ? '-mr-2' : '-ml-2'}
-      aria-label={`Sort by ${label.toLowerCase()}${active ? `, currently ${direction === 'asc' ? 'ascending' : 'descending'}` : ''}`}
+      aria-label={t(
+        !active ? 'orders.sortBy' : direction === 'asc' ? 'orders.sortAscending' : 'orders.sortDescending',
+        { label },
+      )}
     >
       {label}
       <Icon data-icon="inline-end" className={active ? undefined : 'text-muted-foreground'} />

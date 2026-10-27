@@ -16,14 +16,16 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { currentUser } from '@/lib/mock-data/overview'
 import { getInitials } from '@/lib/format'
+import { useI18n } from '@/components/providers/i18n-provider'
 
 export function UserMenu() {
   const router = useRouter()
+  const { t } = useI18n()
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button variant="ghost" size="icon" className="rounded-full" aria-label="Open account menu" />}
+        render={<Button variant="ghost" size="icon" className="rounded-full" aria-label={t('userMenu.open')} />}
       >
         <Avatar className="size-8">
           <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
@@ -40,29 +42,26 @@ export function UserMenu() {
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => router.push('/settings')}>
             <UserRound />
-            Profile
+            {t('userMenu.profile')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => router.push('/settings')}>
             <KeyRound />
-            API keys
+            {t('userMenu.apiKeys')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => router.push('/settings')}>
             <Settings />
-            Workspace settings
+            {t('userMenu.workspaceSettings')}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => toast.info('Docs will be linked once the starter kit is published.')}>
+          <DropdownMenuItem onClick={() => toast.info(t('userMenu.docsToast'))}>
             <BookOpen />
-            Documentation
+            {t('userMenu.docs')}
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => toast.info('Sign out is wired to the auth provider in a later step.')}
-          >
+          <DropdownMenuItem variant="destructive" onClick={() => toast.info(t('userMenu.signOutToast'))}>
             <LogOut />
-            Sign out
+            {t('userMenu.signOut')}
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

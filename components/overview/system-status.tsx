@@ -6,37 +6,40 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/shared/error-state'
 import { StatusBadge, type StatusTone } from '@/components/shared/status-badge'
+import { useI18n } from '@/components/providers/i18n-provider'
 import { useSystemStatus } from '@/hooks/use-overview-data'
-import { formatDateTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { ServiceHealth } from '@/lib/types'
 
-const HEALTH: Record<ServiceHealth, { label: string; tone: StatusTone }> = {
-  operational: { label: 'Operational', tone: 'success' },
-  degraded: { label: 'Degraded', tone: 'warning' },
-  outage: { label: 'Outage', tone: 'danger' },
+const HEALTH_TONE: Record<ServiceHealth, StatusTone> = {
+  operational: 'success',
+  degraded: 'warning',
+  outage: 'danger',
 }
 
 export function SystemStatus() {
+  const { t, format } = useI18n()
   const { data, error, isLoading, isValidating, mutate } = useSystemStatus()
   const issues = data?.services.filter((service) => service.health !== 'operational').length ?? 0
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>System status</CardTitle>
+        <CardTitle>{t('system.title')}</CardTitle>
         <CardDescription>
           {data
             ? issues === 0
-              ? 'All systems operational'
-              : `${issues} service${issues > 1 ? 's' : ''} reporting issues`
-            : 'Checking services...'}
+              ? t('system.allOperational')
+              : issues === 1
+                ? t('system.issues_one')
+                : t('system.issues', { count: issues })
+            : t('system.checking')}
         </CardDescription>
         <CardAction>
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Refresh status"
+            aria-label={t('system.refresh')}
             disabled={isValidating}
             onClick={() => mutate()}
           >
@@ -46,7 +49,7 @@ export function SystemStatus() {
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {error ? (
-          <ErrorState message={error.message} onRetry={() => mutate()} />
+          <ErrorState error={error} onRetry={() => mutate()} />
         ) : isLoading || !data ? (
           Array.from({ length: 5 }, (_, index) => <Skeleton key={index} className="h-9 w-full" />)
         ) : (
@@ -55,17 +58,17 @@ export function SystemStatus() {
               {data.services.map((service) => (
                 <li key={service.id} className="flex items-center justify-between gap-3 rounded-lg px-2 py-2">
                   <div className="flex min-w-0 flex-col">
-                    <span className="truncate text-sm font-medium">{service.name}</span>
+                    <span className="truncate text-sm font-medium">{t(`system.services.${service.id}`)}</span>
                     <span className="truncate text-xs text-muted-foreground">
                       <span className="font-mono tabular-nums">{service.latencyMs}ms</span> ·{' '}
-                      <span className="font-mono tabular-nums">{service.uptime.toFixed(2)}%</span> uptime
+                      <span className="font-mono tabular-nums">{service.uptime.toFixed(2)}%</span> {t('system.uptime')}
                     </span>
                   </div>
-                  <StatusBadge tone={HEALTH[service.health].tone}>{HEALTH[service.health].label}</StatusBadge>
+                  <StatusBadge tone={HEALTH_TONE[service.health]}>{t(`system.health.${service.health}`)}</StatusBadge>
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-muted-foreground">Last checked {formatDateTime(data.checkedAt)}</p>
+            <p className="text-xs text-muted-foreground">{t('system.lastChecked', { date: format.dateTime(data.checkedAt) })}</p>
           </>
         )}
       </CardContent>

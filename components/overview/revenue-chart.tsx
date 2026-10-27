@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -14,43 +14,39 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { ErrorState } from '@/components/shared/error-state'
+import { useI18n } from '@/components/providers/i18n-provider'
 import { useRevenue } from '@/hooks/use-overview-data'
-import { formatChange, formatCompact, formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { RevenueRange } from '@/lib/types'
 
-const RANGES: { value: RevenueRange; label: string; description: string }[] = [
-  { value: '7d', label: '7D', description: 'last 7 days' },
-  { value: '30d', label: '30D', description: 'last 30 days' },
-  { value: '90d', label: '90D', description: 'last 90 days' },
-  { value: '12m', label: '12M', description: 'last 12 months' },
-]
-
-const chartConfig = {
-  mrr: { label: 'MRR', color: 'var(--chart-5)' },
-  newRevenue: { label: 'New revenue', color: 'var(--chart-2)' },
-} satisfies ChartConfig
-
-const dayFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
-const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', year: '2-digit', timeZone: 'UTC' })
+const RANGES: RevenueRange[] = ['7d', '30d', '90d', '12m']
 
 export function RevenueChart() {
+  const { t, format } = useI18n()
   const [range, setRange] = useState<RevenueRange>('30d')
   const { data, error, isLoading, isValidating, mutate } = useRevenue(range)
-  const formatTick = (iso: string) => (range === '12m' ? monthFormatter : dayFormatter).format(new Date(iso))
-  const activeRange = RANGES.find((item) => item.value === range)!
+  const formatTick = (iso: string) => (range === '12m' ? format.monthYear(iso) : format.monthDay(iso))
+
+  const chartConfig = useMemo(
+    () =>
+      ({
+        mrr: { label: t('revenue.series.mrr'), color: 'var(--chart-5)' },
+        newRevenue: { label: t('revenue.series.newRevenue'), color: 'var(--chart-2)' },
+      }) satisfies ChartConfig,
+    [t],
+  )
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Revenue</CardTitle>
+        <CardTitle>{t('revenue.title')}</CardTitle>
         <CardDescription>
           {data ? (
             <>
-              <span className="font-mono font-medium text-foreground tabular-nums">{formatCurrency(data.total)}</span>{' '}
-              collected in the {activeRange.description}{' '}
+              <span className="font-mono font-medium text-foreground tabular-nums">{format.currency(data.total)}</span>{' '}
+              {t('revenue.collectedIn', { range: t(`revenue.ranges.${range}.description`) })}{' '}
               <span className={cn('tabular-nums', data.change >= 0 ? 'text-success' : 'text-destructive')}>
-                {formatChange(data.change)}
+                {format.change(data.change)}
               </span>
             </>
           ) : (
@@ -67,11 +63,16 @@ export function RevenueChart() {
               const next = value[0] as RevenueRange | undefined
               if (next) setRange(next)
             }}
-            aria-label="Revenue time range"
+            aria-label={t('revenue.rangeAria')}
           >
             {RANGES.map((item) => (
-              <ToggleGroupItem key={item.value} value={item.value} aria-label={item.description} className="px-2.5">
-                {item.label}
+              <ToggleGroupItem
+                key={item}
+                value={item}
+                aria-label={t(`revenue.ranges.${item}.description`)}
+                className="px-2.5"
+              >
+                {t(`revenue.ranges.${item}.label`)}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -79,7 +80,7 @@ export function RevenueChart() {
       </CardHeader>
       <CardContent>
         {error ? (
-          <ErrorState message={error.message} onRetry={() => mutate()} />
+          <ErrorState error={error} onRetry={() => mutate()} />
         ) : isLoading || !data ? (
           <Skeleton className="h-72 w-full" />
         ) : (
@@ -107,7 +108,7 @@ export function RevenueChart() {
                 tickLine={false}
                 axisLine={false}
                 width={48}
-                tickFormatter={(value: number) => `$${formatCompact(value)}`}
+                tickFormatter={(value: number) => format.compactCurrency(value)}
               />
               <ChartTooltip
                 cursor={false}
@@ -123,7 +124,7 @@ export function RevenueChart() {
                         <span className="text-muted-foreground">
                           {chartConfig[name as keyof typeof chartConfig]?.label ?? name}
                         </span>
-                        <span className="font-mono font-medium tabular-nums">{formatCurrency(Number(value))}</span>
+                        <span className="font-mono font-medium tabular-nums">{format.currency(Number(value))}</span>
                       </div>
                     )}
                   />

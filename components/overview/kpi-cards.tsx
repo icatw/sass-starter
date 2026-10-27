@@ -5,15 +5,15 @@ import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/shared/error-state'
+import { useI18n } from '@/components/providers/i18n-provider'
 import { useKpis } from '@/hooks/use-overview-data'
-import { formatChange, formatMetric } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { Kpi } from '@/lib/types'
 
 export function KpiCards() {
   const { data, error, isLoading, mutate } = useKpis()
 
-  if (error) return <ErrorState message={error.message} onRetry={() => mutate()} />
+  if (error) return <ErrorState error={error} onRetry={() => mutate()} />
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -25,8 +25,12 @@ export function KpiCards() {
 }
 
 function KpiCard({ kpi }: { kpi: Kpi }) {
+  const { t, format } = useI18n()
   const positive = kpi.change >= 0
   const TrendIcon = positive ? ArrowUpRight : ArrowDownRight
+  const captionParams = Object.fromEntries(
+    Object.entries(kpi.captionParams).map(([key, param]) => [key, format.metric(param.value, param.format)]),
+  )
 
   return (
     <Link
@@ -35,9 +39,9 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
     >
       <Card size="sm" className="h-full transition-colors hover:bg-muted/40">
         <CardHeader>
-          <CardDescription>{kpi.label}</CardDescription>
+          <CardDescription>{t(`kpi.${kpi.id}.label`)}</CardDescription>
           <CardTitle className="font-mono text-2xl font-semibold tracking-tight tabular-nums">
-            {formatMetric(kpi.value, kpi.format)}
+            {format.metric(kpi.value, kpi.format)}
           </CardTitle>
         </CardHeader>
         <CardContent className="flex items-center gap-2 text-xs">
@@ -48,9 +52,9 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
             )}
           >
             <TrendIcon aria-hidden className="size-3.5" />
-            {formatChange(kpi.change)}
+            {format.change(kpi.change)}
           </span>
-          <span className="truncate text-muted-foreground">{kpi.caption}</span>
+          <span className="truncate text-muted-foreground">{t(`kpi.${kpi.id}.caption`, captionParams)}</span>
         </CardContent>
       </Card>
     </Link>

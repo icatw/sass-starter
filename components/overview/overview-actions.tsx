@@ -5,6 +5,7 @@ import { useSWRConfig } from 'swr'
 import { toast } from 'sonner'
 import { Download, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useI18n } from '@/components/providers/i18n-provider'
 import { getOrders } from '@/lib/api/overview'
 import { cn } from '@/lib/utils'
 
@@ -16,6 +17,7 @@ function matchesOverviewKey(key: unknown) {
 }
 
 export function OverviewActions() {
+  const { t } = useI18n()
   const { mutate } = useSWRConfig()
   const [refreshing, setRefreshing] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -24,7 +26,7 @@ export function OverviewActions() {
     setRefreshing(true)
     await mutate(matchesOverviewKey)
     setRefreshing(false)
-    toast.success('Dashboard refreshed')
+    toast.success(t('overview.refreshed'))
   }
 
   async function handleExport() {
@@ -50,9 +52,9 @@ export function OverviewActions() {
       link.download = 'orders.csv'
       link.click()
       URL.revokeObjectURL(url)
-      toast.success(`Exported ${orders.length} orders`)
+      toast.success(t('overview.exported', { count: orders.length }))
     } catch {
-      toast.error('Export failed')
+      toast.error(t('overview.exportFailed'))
     } finally {
       setExporting(false)
     }
@@ -62,11 +64,11 @@ export function OverviewActions() {
     <>
       <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
         <RefreshCw data-icon="inline-start" className={cn(refreshing && 'animate-spin')} />
-        Refresh
+        {t('overview.refresh')}
       </Button>
       <Button size="sm" onClick={handleExport} disabled={exporting}>
         <Download data-icon="inline-start" />
-        Export orders
+        {t('overview.exportOrders')}
       </Button>
     </>
   )

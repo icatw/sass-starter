@@ -13,8 +13,9 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { useI18n } from '@/components/providers/i18n-provider'
+import { translateError } from '@/components/shared/error-state'
 import { refundOrder } from '@/lib/api/overview'
-import { formatCents } from '@/lib/format'
 import type { Order } from '@/lib/types'
 
 interface RefundOrderDialogProps {
@@ -24,6 +25,7 @@ interface RefundOrderDialogProps {
 }
 
 export function RefundOrderDialog({ order, onOpenChange, onRefunded }: RefundOrderDialogProps) {
+  const { t, format } = useI18n()
   const [pending, setPending] = useState(false)
 
   async function handleConfirm() {
@@ -32,10 +34,12 @@ export function RefundOrderDialog({ order, onOpenChange, onRefunded }: RefundOrd
     try {
       const updated = await refundOrder(order.id)
       onRefunded(updated)
-      toast.success(`Refunded ${formatCents(updated.amount)}`, { description: `${updated.invoiceNumber} · ${updated.customer.name}` })
+      toast.success(t('refund.success', { amount: format.cents(updated.amount) }), {
+        description: `${updated.invoiceNumber} · ${updated.customer.name}`,
+      })
       onOpenChange(false)
     } catch (error) {
-      toast.error('Refund failed', { description: error instanceof Error ? error.message : 'Unknown error' })
+      toast.error(t('refund.failed'), { description: translateError(t, error) })
     } finally {
       setPending(false)
     }
@@ -45,18 +49,22 @@ export function RefundOrderDialog({ order, onOpenChange, onRefunded }: RefundOrd
     <AlertDialog open={order !== null} onOpenChange={(open) => !pending && onOpenChange(open)}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Refund this order?</AlertDialogTitle>
+          <AlertDialogTitle>{t('refund.title')}</AlertDialogTitle>
           <AlertDialogDescription>
             {order
-              ? `${formatCents(order.amount)} will be returned to ${order.customer.name} (${order.paymentMethod}). This cannot be undone.`
+              ? t('refund.description', {
+                  amount: format.cents(order.amount),
+                  customer: order.customer.name,
+                  method: order.paymentMethod,
+                })
               : null}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>{t('common.cancel')}</AlertDialogCancel>
           <Button variant="destructive" disabled={pending} onClick={handleConfirm}>
             {pending && <Spinner data-icon="inline-start" />}
-            Refund
+            {t('refund.confirm')}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
