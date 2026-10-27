@@ -1,16 +1,25 @@
-# v0 sandbox internal files
-__v0_runtime_loader.js
-__v0_devtools.tsx
-__v0_jsx-dev-runtime.ts
-.snowflake/
-.design-cache/
-.v0-trash/
-.vercel/
+.env
+.env.*
+!.env.example
 
-# Environment variables
-.env*.local
-
-# Common ignores
-node_modules
-.next/
 .DS_Store
+.idea/
+.vscode/
+
+node_modules/
+.next/
+dist/
+coverage/
+
+bin/
+tmp/
+vendor/
+
+__pycache__/
+.pytest_cache/
+.venv/
+
+harness/reports/*
+!harness/reports/.gitkeep
+
+*.log
