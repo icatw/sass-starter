@@ -8,7 +8,7 @@ go run ./cmd/server
 curl http://localhost:8080/healthz
 ```
 
-`/v1/me` 通过 Better Auth JWT 插件签发的 60 秒 EdDSA 凭据鉴权，并从 PostgreSQL 读取当前用户验证状态和角色。管理员受限路由使用 `requireAdmin` 中间件。
+`/v1/me` 通过 Better Auth JWT 插件签发的 60 秒 EdDSA 凭据鉴权，并从 PostgreSQL 读取当前用户验证状态和角色。`GET /v1/admin/users` 仅管理员可访问，返回最近 100 个用户的非凭据资料。管理员受限路由使用 `requireAdmin` 中间件。
 
 管理员引导命令：
 
