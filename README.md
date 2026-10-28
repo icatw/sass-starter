@@ -45,11 +45,11 @@ set -a && . ./.env && set +a
 cd services/api && go run ./cmd/promote-admin verified@example.com
 ```
 
-核心页面：营销首页 `/`、登录 `/login`、注册 `/register`、普通用户账户 `/account`、管理员 Dashboard `/dashboard`。认证邮件和密码重置分别使用一次性、一小时有效链接。
+核心页面：营销首页 `/`、登录 `/login`、注册 `/register`、普通用户账户 `/account`、个人任务示例 `/account/tasks`、管理员 Dashboard `/dashboard`。普通用户可编辑姓名和管理自己的示例任务；管理员 Dashboard 的“用户”页可查看最近注册账号。认证邮件和密码重置分别使用一次性、一小时有效链接。
 
 Better Auth 初始 schema 迁移位于 `db/migrations/000001_auth_schema.up.sql`。只有尚未发布/执行的初始迁移才允许重新生成；后续 schema 变更必须新增迁移。
 
-schema 差异使用 `make auth-schema` 生成新的带序号 `.up.sql`，命令会拒绝覆盖旧迁移；请检查生成 SQL、补齐对应 `.down.sql`，然后运行 `make db-migrate`。`make generate` 仅重新生成 OpenAPI Client。认证全链路冒烟测试入口为 `make auth-smoke`，要求 Web、API、PostgreSQL 和 Mailpit 都已启动。
+schema 差异使用 `make auth-schema` 生成新的带序号 `.up.sql`，命令会拒绝覆盖旧迁移；请检查生成 SQL、补齐对应 `.down.sql`，然后运行 `make db-migrate`。`make generate` 重新生成 OpenAPI Client；`make contract-check` 检查生成文件与契约是否一致。认证全链路冒烟测试入口为 `make auth-smoke`，要求 Web、API、PostgreSQL 和 Mailpit 都已启动。`make verify` 包含契约一致性检查，并由 GitHub Actions 在 PR 和 `main` 推送时执行。
 
 ## AI-native 工作流
 

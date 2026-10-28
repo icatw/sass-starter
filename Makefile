@@ -2,7 +2,7 @@ SHELL := /bin/sh
 
 API_DIR := services/api
 
-.PHONY: doctor setup dev api web db-migrate db-reset generate auth-schema test smoke auth-smoke verify
+.PHONY: doctor setup dev api web db-migrate db-reset generate contract-check auth-schema test smoke auth-smoke verify
 
 doctor:
 	@./harness/scripts/doctor.sh
@@ -23,7 +23,7 @@ web:
 
 db-migrate:
 	@test -n "$(DATABASE_URL)" || (echo "请先设置 DATABASE_URL" && exit 1)
-	@cd $(API_DIR) && go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate -path ../../db/migrations -database "$(DATABASE_URL)" up
+	@cd $(API_DIR) && go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.18.3 -path ../../db/migrations -database "$(DATABASE_URL)" up
 
 db-reset:
 	@docker compose down -v
@@ -31,6 +31,9 @@ db-reset:
 
 generate:
 	@./harness/scripts/generate.sh
+
+contract-check:
+	@./harness/scripts/check-generated.sh
 
 auth-schema:
 	@pnpm --filter web auth:schema

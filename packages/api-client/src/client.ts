@@ -1,9 +1,12 @@
 import createClient from 'openapi-fetch'
 import type { paths } from './schema'
 
-export function createApiClient(baseUrl: string, accessToken: string) {
+export function createApiClient(baseUrl: string, accessToken: string, origin?: string) {
   return createClient<paths>({
     baseUrl,
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...(origin ? { Origin: origin } : {}),
+    },
   })
 }
