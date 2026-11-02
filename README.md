@@ -37,6 +37,14 @@ pnpm dev
 ```
 
 `make dev` 启动 PostgreSQL、Redis 和 Mailpit；开发环境认证邮件会进入 [Mailpit](http://localhost:8025)。生产环境必须配置有效 SMTP，不会将认证链接写入日志。Better Auth 使用 `BETTER_AUTH_SECRET`（至少 32 个字符）、`BETTER_AUTH_URL` 和 `DATABASE_URL`。
+`make doctor` 会在存在 `.env` 时校验 API/Web 环境变量；Web 配置入口位于 `apps/web/lib/env.ts`，Go 配置入口位于 `services/api/internal/config`。
+
+环境变量分层：
+
+- 必需：`DATABASE_URL`、`BETTER_AUTH_URL` 或 `NEXT_PUBLIC_APP_URL`、`BETTER_AUTH_SECRET`、`API_INTERNAL_URL`
+- 开发默认：`APP_ENV=development`、`AUTH_EMAIL_MODE=mailpit`
+- 生产额外：`APP_ENV=production`、`AUTH_EMAIL_MODE=smtp`，以及 `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM`；禁止保留示例密钥
+- 可选：`REDIS_URL`、`S3_*`（尚未作为业务依赖强制启用）
 
 注册默认创建普通用户。用户验证邮箱后可登录并访问 `/account`；Dashboard、`/admin/**` 和平台计费页面仅管理员可访问。已验证账户可通过以下命令安全提升为管理员，重复执行不会产生副作用：
 
