@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"github.com/icatw/saas-starter/services/api/internal/config"
 )
 
 func main() {
@@ -16,9 +18,9 @@ func main() {
 		fmt.Fprintln(os.Stderr, "usage: go run ./cmd/promote-admin <verified-email>")
 		os.Exit(2)
 	}
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		fmt.Fprintln(os.Stderr, "DATABASE_URL is required")
+	dsn, err := config.LoadDatabaseURL()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(2)
 	}
 	email := strings.TrimSpace(strings.ToLower(os.Args[1]))

@@ -2,6 +2,7 @@ import 'server-only'
 import { headers } from 'next/headers'
 import { createApiClient, type components } from '@saas-starter/api-client'
 import { auth } from '@/lib/auth/server'
+import { getWebEnv } from '@/lib/env'
 
 export type AdminUser = components['schemas']['AdminUser']
 
@@ -13,7 +14,7 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
   }
 
   const { token } = await auth.api.getToken({ headers: requestHeaders })
-  const api = createApiClient(process.env.API_INTERNAL_URL ?? 'http://localhost:8080', token)
+  const api = createApiClient(getWebEnv().apiInternalURL, token)
   const { data, error, response } = await api.GET('/v1/admin/users')
 
   if (!response.ok || error || !data) {

@@ -2,25 +2,19 @@ import { Pool } from 'pg'
 import { betterAuth } from 'better-auth'
 import { jwt } from 'better-auth/plugins'
 import { sendAuthEmail } from '@/lib/auth/email'
+import { getWebEnv } from '@/lib/env'
 
-const baseURL = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL
-if (!baseURL) throw new Error('BETTER_AUTH_URL must be configured')
-
-const databaseUrl = process.env.DATABASE_URL
-if (!databaseUrl) throw new Error('DATABASE_URL must be configured')
-
-const secret = process.env.BETTER_AUTH_SECRET
-if (!secret || secret.length < 32) throw new Error('BETTER_AUTH_SECRET must contain at least 32 characters')
-
-const secureCookies = process.env.NODE_ENV === 'production'
+const env = getWebEnv()
+const baseURL = env.authURL
+const secureCookies = env.appEnv === 'production'
 
 export const auth = betterAuth({
   appName: 'SaaS Foundry',
   baseURL,
   basePath: '/api/auth',
-  secret,
+  secret: env.authSecret,
   trustedOrigins: [baseURL],
-  database: new Pool({ connectionString: databaseUrl }),
+  database: new Pool({ connectionString: env.databaseURL }),
   user: {
     modelName: 'users',
     fields: {

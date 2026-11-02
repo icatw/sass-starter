@@ -8,7 +8,6 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -18,6 +17,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"golang.org/x/time/rate"
+
+	"github.com/icatw/saas-starter/services/api/internal/config"
 )
 
 type user struct {
@@ -263,23 +264,19 @@ func requireSameOrigin(allowed string) gin.HandlerFunc {
 func main() {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
-	databaseURL := os.Getenv("DATABASE_URL")
-	issuer := os.Getenv("BETTER_AUTH_URL")
-	if issuer == "" {
-		issuer = os.Getenv("NEXT_PUBLIC_APP_URL")
+	cfg, err := config.Load()
+	if err != nil {
+		panic(err)
 	}
-	if databaseURL == "" || issuer == "" {
-		panic("DATABASE_URL and BETTER_AUTH_URL (or NEXT_PUBLIC_APP_URL) are required")
-	}
-	r.Use(requireSameOrigin(issuer))
-	db, err := sql.Open("pgx", databaseURL)
+	r.Use(requireSameOrigin(cfg.IssuerURL))
+	db, err := sql.Open("pgx", cfg.DatabaseURL)
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	keyset, err := keyfunc.NewDefaultOverrideCtx(ctx, []string{strings.TrimRight(issuer, "/") + "/api/auth/jwks"}, keyfunc.Override{
+	keyset, err := keyfunc.NewDefaultOverrideCtx(ctx, []string{cfg.IssuerURL + "/api/auth/jwks"}, keyfunc.Override{
 		RefreshInterval:   time.Hour,
 		RefreshUnknownKID: rate.NewLimiter(rate.Every(5*time.Second), 1),
 	})
@@ -293,7 +290,7 @@ func main() {
 			"service": "api",
 		})
 	})
-	protected := r.Group("/v1", authenticate(db, keyset, issuer))
+	protected := r.Group("/v1", authenticate(db, keyset, cfg.IssuerURL))
 	protected.GET("/me", func(c *gin.Context) { c.JSON(http.StatusOK, c.MustGet("user")) })
 	protected.GET("/admin/health", requireAdmin(), func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 	protected.GET("/admin/users", requireAdmin(), listAdminUsers(db))
@@ -302,12 +299,7 @@ func main() {
 	protected.PATCH("/tasks/:taskId", updateTask(db))
 	protected.DELETE("/tasks/:taskId", deleteTask(db))
 
-	port := os.Getenv("APP_PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	if err := r.Run(":" + port); err != nil {
+	if err := r.Run(":" + cfg.Port); err != nil {
 		panic(err)
 	}
 }
