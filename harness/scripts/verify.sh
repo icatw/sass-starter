@@ -11,6 +11,7 @@ for file in $required_files; do
 done
 
 echo "结构检查通过"
+./harness/scripts/check-example-removable.sh
 ./harness/scripts/check-generated.sh
 ./harness/scripts/test.sh
 APP_ENV="${APP_ENV:-test}" \

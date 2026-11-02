@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { existsSync } from 'node:fs'
 
 const baseURL = (process.env.AUTH_SMOKE_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 const apiURL = (process.env.API_INTERNAL_URL ?? 'http://localhost:8080').replace(/\/$/, '')
@@ -83,9 +84,12 @@ assert.equal(account.status, 200, 'regular user should remain on the account pag
 const accountHTML = await account.text()
 assert.ok(accountHTML.includes(email), 'account page should render the authenticated email')
 assert.ok(accountHTML.includes('Updated Auth Smoke'), 'account page should render the updated profile name')
-const tasksPage = await fetch(`${baseURL}/account/tasks`, { headers: { cookie: sessionCookie }, redirect: 'manual' })
-assert.equal(tasksPage.status, 200, 'authenticated user should be able to open the personal tasks page')
-assert.match(await tasksPage.text(), /No tasks yet|还没有任务/, 'tasks page should render the empty state from the Go API')
+const tasksExampleEnabled = existsSync(new URL('../../apps/web/app/account/tasks/page.tsx', import.meta.url))
+if (tasksExampleEnabled) {
+  const tasksPage = await fetch(`${baseURL}/account/tasks`, { headers: { cookie: sessionCookie }, redirect: 'manual' })
+  assert.equal(tasksPage.status, 200, 'authenticated user should be able to open the personal tasks page')
+  assert.match(await tasksPage.text(), /No tasks yet|还没有任务/, 'tasks page should render the empty state from the Go API')
+}
 
 const resetRequest = await post('/api/auth/request-password-reset', { email, redirectTo: '/reset-password/confirm' })
 assert.equal(resetRequest.status, 200, 'password reset request should be accepted')
@@ -119,4 +123,8 @@ assert.ok(!signedOutSession?.session, 'signed-out session must be invalid')
 
 const unauthorizedProfile = await fetch(`${apiURL}/v1/me`, { signal: AbortSignal.timeout(5000) })
 assert.equal(unauthorizedProfile.status, 401, 'Go API should reject requests without an internal JWT')
-console.log('Authentication smoke passed: verify, role isolation, login, profile update, personal tasks page, reset, session revocation, single-use token, logout, unauthenticated API')
+console.log(
+  tasksExampleEnabled
+    ? 'Authentication smoke passed: verify, role isolation, login, profile update, personal tasks page, reset, session revocation, single-use token, logout, unauthenticated API'
+    : 'Authentication smoke passed: verify, role isolation, login, profile update, reset, session revocation, single-use token, logout, unauthenticated API',
+)
