@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/readyz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Check API readiness */
+        get: operations["getReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me": {
         parameters: {
             query?: never;
@@ -150,11 +167,27 @@ export interface components {
             /** @example api */
             service: string;
         };
+        ReadyResponse: {
+            /** @enum {string} */
+            status: "ok";
+            /** @example api */
+            service: string;
+            /**
+             * @example {
+             *       "database": "ok"
+             *     }
+             */
+            checks: {
+                [key: string]: string;
+            };
+        };
         ErrorResponse: {
             /** @example INTERNAL_ERROR */
             code: string;
             /** @example Internal server error */
             message: string;
+            /** @example 0f1e2d3c4b5a6978 */
+            requestId: string;
         };
     };
     responses: never;
@@ -184,6 +217,35 @@ export interface operations {
                 };
             };
             /** @description API is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description API dependencies are ready */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadyResponse"];
+                };
+            };
+            /** @description One or more dependencies are unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;
