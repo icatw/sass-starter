@@ -81,25 +81,25 @@ function resolveAuthEmailMode(appEnv: AppEnv, raw: string | undefined): 'mailpit
   return value
 }
 
-function resolveSMTP(appEnv: AppEnv, mode: 'mailpit' | 'smtp') {
+function resolveSMTP(source: NodeJS.ProcessEnv, appEnv: AppEnv, mode: 'mailpit' | 'smtp') {
   const allowMailpitDefaults = appEnv !== 'production' && mode === 'mailpit'
-  const host = (process.env.SMTP_HOST ?? (allowMailpitDefaults ? '127.0.0.1' : '')).trim()
-  const from = (process.env.SMTP_FROM ?? (allowMailpitDefaults ? 'SaaS Foundry <no-reply@localhost>' : '')).trim()
-  const portRaw = (process.env.SMTP_PORT ?? (allowMailpitDefaults ? '1025' : '')).trim()
+  const host = (source.SMTP_HOST ?? (allowMailpitDefaults ? '127.0.0.1' : '')).trim()
+  const from = (source.SMTP_FROM ?? (allowMailpitDefaults ? 'SaaS Foundry <no-reply@localhost>' : '')).trim()
+  const portRaw = (source.SMTP_PORT ?? (allowMailpitDefaults ? '1025' : '')).trim()
   const port = Number(portRaw)
 
   if (!host || !from || !portRaw || Number.isNaN(port) || port <= 0) {
     throw new Error('SMTP_HOST, SMTP_PORT and SMTP_FROM are required to send authentication email')
   }
 
-  const user = (process.env.SMTP_USER ?? '').trim()
-  const password = process.env.SMTP_PASSWORD ?? ''
+  const user = (source.SMTP_USER ?? '').trim()
+  const password = source.SMTP_PASSWORD ?? ''
 
   return {
     host,
     port,
     from,
-    secure: process.env.SMTP_SECURE === 'true',
+    secure: source.SMTP_SECURE === 'true',
     user: user || undefined,
     password: user ? password : undefined,
   }
@@ -125,7 +125,7 @@ export function loadWebEnv(source: NodeJS.ProcessEnv = process.env): WebEnv {
     databaseURL: requireDatabaseURL(source.DATABASE_URL),
     apiInternalURL: requireAbsoluteHTTPURL('API_INTERNAL_URL', source.API_INTERNAL_URL ?? 'http://localhost:8080'),
     authEmailMode,
-    smtp: resolveSMTP(appEnv, authEmailMode),
+    smtp: resolveSMTP(source, appEnv, authEmailMode),
   }
 }
 
