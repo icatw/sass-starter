@@ -6,6 +6,8 @@ import { getWebEnv } from '@/lib/env'
 
 export type AdminUser = components['schemas']['AdminUser']
 
+export type AuditLogEvent = components['schemas']['AuditLogEvent']
+
 export async function getAdminUsers(): Promise<AdminUser[]> {
   const requestHeaders = await headers()
   const session = await auth.api.getSession({ headers: requestHeaders })
@@ -22,6 +24,24 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
     throw new Error(`Go API user directory request failed with status ${response.status}`)
   }
   return data.users
+}
+
+export async function getAdminAuditLogs(): Promise<AuditLogEvent[]> {
+  const requestHeaders = await headers()
+  const session = await auth.api.getSession({ headers: requestHeaders })
+  if (!session || session.user.disabled || session.user.role !== 'admin') {
+    throw new Error('An active administrator session is required')
+  }
+
+  const { token } = await auth.api.getToken({ headers: requestHeaders })
+  const env = getWebEnv()
+  const api = createApiClient(env.apiInternalURL, token, env.authURL)
+  const { data, error, response } = await api.GET('/v1/admin/audit-logs')
+
+  if (!response.ok || error || !data) {
+    throw new Error(`Go API audit log request failed with status ${response.status}`)
+  }
+  return data.events
 }
 
 export async function getAdminApi() {

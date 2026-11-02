@@ -10,6 +10,7 @@ import (
 	"github.com/icatw/saas-starter/services/api/internal/authz"
 	"github.com/icatw/saas-starter/services/api/internal/httpx"
 	"github.com/icatw/saas-starter/services/api/internal/modules/adminusers"
+	"github.com/icatw/saas-starter/services/api/internal/modules/auditlogs"
 	"github.com/icatw/saas-starter/services/api/internal/modules/tasks"
 )
 
@@ -44,6 +45,7 @@ func NewRouter(opts Options) *gin.Engine {
 	})
 	protected.GET("/admin/users", authz.RequireAdmin(), adminusers.List(opts.DB))
 	protected.PATCH("/admin/users/:userId", authz.RequireAdmin(), adminusers.UpdateStatus(opts.DB))
+	protected.GET("/admin/audit-logs", authz.RequireAdmin(), auditlogs.List(opts.DB))
 	protected.GET("/tasks", tasks.List(opts.DB))
 	protected.POST("/tasks", tasks.Create(opts.DB))
 	protected.PATCH("/tasks/:taskId", tasks.Update(opts.DB))

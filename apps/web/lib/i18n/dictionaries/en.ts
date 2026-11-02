@@ -57,6 +57,24 @@ export const en = {
     lastAdmin: 'Cannot disable the last active administrator',
     saveFailed: 'Could not update account status. Refresh and try again.',
   },
+  auditLogs: {
+    title: 'Audit Logs',
+    description: 'Recent administrative actions recorded by the API.',
+    latest: 'Showing the 100 most recent audit events at most.',
+    createdAt: 'Time',
+    actor: 'Actor',
+    action: 'Action',
+    resource: 'Resource',
+    requestId: 'Request ID',
+    metadata: 'Details',
+    empty: 'No administrative actions have been recorded yet.',
+    loadFailed: 'Could not load audit logs. Refresh the page to try again.',
+    actions: {
+      userDisable: 'Disable user',
+      userRestore: 'Restore user',
+    },
+  },
+
   tasks: {
     title: 'My tasks',
     description: 'A small example feature for your own account.',
@@ -136,7 +154,7 @@ export const en = {
       auditLogs: {
         title: 'Audit Logs',
         description: 'Every administrative action, searchable and exportable.',
-        planned: ['Event stream with filters', 'Actor and resource drill-down', 'CSV export'],
+        planned: ['Filters by actor/action', 'Resource drill-down', 'CSV export'],
       },
       settings: {
         title: 'Settings',

@@ -175,6 +175,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /v1/admin/audit-logs:
+    get:
+      operationId: listAdminAuditLogs
+      summary: List recent administrative audit events
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Recent audit events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogList'
+        '401':
+          description: Missing or invalid internal credential
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Administrator role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unable to load audit logs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /v1/tasks:
     get:
       operationId: listTasks
@@ -353,6 +385,34 @@ components:
         role: { type: string, enum: [user, admin] }
         emailVerified: { type: boolean }
         disabled: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    AuditLogList:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogEvent'
+    AuditLogEvent:
+      type: object
+      required: [id, actorUserId, actorName, actorEmail, action, resourceType, resourceId, metadata, requestId, createdAt]
+      properties:
+        id: { type: string }
+        actorUserId: { type: string }
+        actorName: { type: string }
+        actorEmail: { type: string }
+        action:
+          type: string
+          enum: [user.disable, user.restore]
+        resourceType:
+          type: string
+          enum: [user]
+        resourceId: { type: string }
+        metadata:
+          type: object
+          additionalProperties: true
+        requestId: { type: string }
         createdAt: { type: string, format: date-time }
     Task:
       type: object

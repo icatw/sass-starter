@@ -106,6 +106,23 @@ export interface paths {
         patch: operations["updateAdminUserStatus"];
         trace?: never;
     };
+    "/v1/admin/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List recent administrative audit events */
+        get: operations["listAdminAuditLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tasks": {
         parameters: {
             query?: never;
@@ -166,6 +183,26 @@ export interface components {
             role: "user" | "admin";
             emailVerified: boolean;
             disabled: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AuditLogList: {
+            events: components["schemas"]["AuditLogEvent"][];
+        };
+        AuditLogEvent: {
+            id: string;
+            actorUserId: string;
+            actorName: string;
+            actorEmail: string;
+            /** @enum {string} */
+            action: "user.disable" | "user.restore";
+            /** @enum {string} */
+            resourceType: "user";
+            resourceId: string;
+            metadata: {
+                [key: string]: unknown;
+            };
+            requestId: string;
             /** Format: date-time */
             createdAt: string;
         };
@@ -455,6 +492,53 @@ export interface operations {
                 };
             };
             /** @description Unable to update user status */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listAdminAuditLogs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recent audit events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLogList"];
+                };
+            };
+            /** @description Missing or invalid internal credential */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Administrator role required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unable to load audit logs */
             500: {
                 headers: {
                     [name: string]: unknown;

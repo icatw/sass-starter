@@ -10,6 +10,7 @@ import (
 
 	"github.com/icatw/saas-starter/services/api/internal/authz"
 	"github.com/icatw/saas-starter/services/api/internal/httpx"
+	"github.com/icatw/saas-starter/services/api/internal/modules/auditlogs"
 )
 
 type User struct {
@@ -134,6 +135,29 @@ func UpdateStatus(db *sql.DB) gin.HandlerFunc {
 				httpx.AbortInternal(c, "Unable to revoke user sessions")
 				return
 			}
+		}
+
+		action := auditlogs.ActionUserRestore
+		if *input.Disabled {
+			action = auditlogs.ActionUserDisable
+		}
+		if err := auditlogs.Insert(
+			c.Request.Context(),
+			tx,
+			actor,
+			action,
+			auditlogs.ResourceUser,
+			targetID,
+			httpx.RequestIDFrom(c),
+			map[string]any{
+				"disabled":      *input.Disabled,
+				"targetEmail":   current.Email,
+				"targetRole":    current.Role,
+				"emailVerified": current.EmailVerified,
+			},
+		); err != nil {
+			httpx.AbortInternal(c, "Unable to record audit log")
+			return
 		}
 
 		if err := tx.Commit(); err != nil {

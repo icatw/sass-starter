@@ -377,6 +377,9 @@ func TestAuthenticationAndAdminAuthorization(t *testing.T) {
 			WithArgs(true, "user-1").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "email", "role", "email_verified", "disabled", "created_at"}).AddRow("user-1", "User", "user@example.test", "user", true, true, createdAt))
 		mock.ExpectExec(regexp.QuoteMeta("DELETE FROM sessions WHERE user_id = $1")).
 			WithArgs("user-1").WillReturnResult(sqlmock.NewResult(0, 2))
+		mock.ExpectExec(regexp.QuoteMeta("INSERT INTO audit_logs")).
+			WithArgs(sqlmock.AnyArg(), "admin-1", "user.disable", "user", "user-1", sqlmock.AnyArg(), sqlmock.AnyArg()).
+			WillReturnResult(sqlmock.NewResult(0, 1))
 		mock.ExpectCommit()
 		r := testRouter(db, keyset)
 		request := httptest.NewRequest(http.MethodPatch, "/v1/admin/users/user-1", strings.NewReader(`{"disabled":true}`))
@@ -386,6 +389,44 @@ func TestAuthenticationAndAdminAuthorization(t *testing.T) {
 		r.ServeHTTP(response, request)
 		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"disabled":true`) {
 			t.Fatalf("unexpected disable response %d: %s", response.Code, response.Body.String())
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("administrator can list audit logs", func(t *testing.T) {
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+		createdAt := time.Date(2026, time.January, 10, 12, 0, 0, 0, time.UTC)
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, email, name, role, email_verified, disabled FROM users WHERE id = $1")).
+			WithArgs("admin-1").WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name", "role", "email_verified", "disabled"}).AddRow("admin-1", "admin@example.test", "Admin", "admin", true, false))
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT a.id, a.actor_user_id, COALESCE(u.name, ''), COALESCE(u.email, ''),")).
+			WillReturnRows(sqlmock.NewRows([]string{"id", "actor_user_id", "actor_name", "actor_email", "action", "resource_type", "resource_id", "metadata", "request_id", "created_at"}).
+				AddRow("evt-1", "admin-1", "Admin", "admin@example.test", "user.disable", "user", "user-1", []byte(`{"disabled":true}`), "req-1", createdAt))
+		r := testRouter(db, keyset)
+		request := httptest.NewRequest(http.MethodGet, "/v1/admin/audit-logs", nil)
+		request.Header.Set("Authorization", "Bearer "+signedTestJWT(t, privateKey, "admin-1", time.Now().Add(time.Minute)))
+		response := httptest.NewRecorder()
+		r.ServeHTTP(response, request)
+		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"action":"user.disable"`) {
+			t.Fatalf("unexpected audit log response %d: %s", response.Code, response.Body.String())
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("regular user cannot list audit logs", func(t *testing.T) {
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, email, name, role, email_verified, disabled FROM users WHERE id = $1")).
+			WithArgs("user-1").WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name", "role", "email_verified", "disabled"}).AddRow("user-1", "user@example.test", "User", "user", true, false))
+		r := testRouter(db, keyset)
+		request := httptest.NewRequest(http.MethodGet, "/v1/admin/audit-logs", nil)
+		request.Header.Set("Authorization", "Bearer "+signedTestJWT(t, privateKey, "user-1", time.Now().Add(time.Minute)))
+		response := httptest.NewRecorder()
+		r.ServeHTTP(response, request)
+		if response.Code != http.StatusForbidden {
+			t.Fatalf("got %d, want 403", response.Code)
 		}
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Fatal(err)
