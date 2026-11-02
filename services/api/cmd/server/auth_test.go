@@ -220,6 +220,67 @@ func TestAuthenticationAndAdminAuthorization(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+	t.Run("task creation rejects overlong title", func(t *testing.T) {
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, email, name, role, email_verified, disabled FROM users WHERE id = $1")).
+			WithArgs("user-1").WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name", "role", "email_verified", "disabled"}).AddRow("user-1", "user@example.test", "User", "user", true, false))
+		r := testRouter(db, keyset)
+		overlong := strings.Repeat("测", 201)
+		request := httptest.NewRequest(http.MethodPost, "/v1/tasks", strings.NewReader(`{"title":"`+overlong+`"}`))
+		request.Header.Set("Authorization", "Bearer "+signedTestJWT(t, privateKey, "user-1", time.Now().Add(time.Minute)))
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+		r.ServeHTTP(response, request)
+		if response.Code != http.StatusBadRequest {
+			t.Fatalf("got %d, want 400: %s", response.Code, response.Body.String())
+		}
+		if !strings.Contains(response.Body.String(), "INVALID_TASK") {
+			t.Fatalf("expected INVALID_TASK, got %s", response.Body.String())
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("task update rejects missing completion state", func(t *testing.T) {
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, email, name, role, email_verified, disabled FROM users WHERE id = $1")).
+			WithArgs("user-1").WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name", "role", "email_verified", "disabled"}).AddRow("user-1", "user@example.test", "User", "user", true, false))
+		r := testRouter(db, keyset)
+		request := httptest.NewRequest(http.MethodPatch, "/v1/tasks/task-1", strings.NewReader(`{}`))
+		request.Header.Set("Authorization", "Bearer "+signedTestJWT(t, privateKey, "user-1", time.Now().Add(time.Minute)))
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+		r.ServeHTTP(response, request)
+		if response.Code != http.StatusBadRequest {
+			t.Fatalf("got %d, want 400: %s", response.Code, response.Body.String())
+		}
+		if !strings.Contains(response.Body.String(), "INVALID_TASK") {
+			t.Fatalf("expected INVALID_TASK, got %s", response.Body.String())
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("task update rejects non-boolean completion state", func(t *testing.T) {
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, email, name, role, email_verified, disabled FROM users WHERE id = $1")).
+			WithArgs("user-1").WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name", "role", "email_verified", "disabled"}).AddRow("user-1", "user@example.test", "User", "user", true, false))
+		r := testRouter(db, keyset)
+		request := httptest.NewRequest(http.MethodPatch, "/v1/tasks/task-1", strings.NewReader(`{"completed":"yes"}`))
+		request.Header.Set("Authorization", "Bearer "+signedTestJWT(t, privateKey, "user-1", time.Now().Add(time.Minute)))
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+		r.ServeHTTP(response, request)
+		if response.Code != http.StatusBadRequest {
+			t.Fatalf("got %d, want 400: %s", response.Code, response.Body.String())
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatal(err)
+		}
+	})
 	t.Run("task creation binds ownership to authenticated subject", func(t *testing.T) {
 		db, mock, _ := sqlmock.New()
 		defer db.Close()

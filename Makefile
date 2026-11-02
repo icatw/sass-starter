@@ -2,7 +2,7 @@ SHELL := /bin/sh
 
 API_DIR := services/api
 
-.PHONY: doctor setup dev api web db-migrate db-reset generate contract-check auth-schema test smoke auth-smoke verify
+.PHONY: doctor setup dev api web db-migrate db-reset generate contract-check auth-schema test smoke auth-smoke verify example-removable
 
 doctor:
 	@./harness/scripts/doctor.sh
@@ -49,3 +49,6 @@ auth-smoke:
 
 verify:
 	@./harness/scripts/verify.sh
+
+example-removable:
+	@./harness/scripts/check-example-removable.sh
