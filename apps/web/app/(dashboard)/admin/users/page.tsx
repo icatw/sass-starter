@@ -6,9 +6,10 @@ import { PageHeader } from '@/components/shared/page-header'
 import { getAdminUsers } from '@/lib/auth/api'
 import { requireAdmin } from '@/lib/auth/session'
 import { getI18n } from '@/lib/i18n/server'
+import { UserStatusActions } from './user-status-actions'
 
 export default async function AdminUsersPage() {
-  await requireAdmin()
+  const admin = await requireAdmin()
   const { t, locale } = await getI18n()
   let users: Awaited<ReturnType<typeof getAdminUsers>> = []
   let loadFailed = false
@@ -37,7 +38,7 @@ export default async function AdminUsersPage() {
             <>
               <div className="border-b px-6 py-3 text-sm text-muted-foreground">{t('adminUsers.latest')}</div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-sm">
+                <table className="w-full min-w-[900px] text-sm">
                   <thead className="border-b bg-muted/30 text-left text-muted-foreground">
                     <tr>
                       <th className="px-4 py-3 font-medium">{t('adminUsers.name')}</th>
@@ -46,6 +47,7 @@ export default async function AdminUsersPage() {
                       <th className="px-4 py-3 font-medium">{t('adminUsers.verification')}</th>
                       <th className="px-4 py-3 font-medium">{t('adminUsers.status')}</th>
                       <th className="px-4 py-3 font-medium">{t('adminUsers.createdAt')}</th>
+                      <th className="px-4 py-3 font-medium">{t('adminUsers.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -66,6 +68,21 @@ export default async function AdminUsersPage() {
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {new Date(user.createdAt).toLocaleDateString(locale)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <UserStatusActions
+                            userId={user.id}
+                            disabled={user.disabled}
+                            isSelf={admin.user.id === user.id}
+                            labels={{
+                              disable: t('adminUsers.disable'),
+                              restore: t('adminUsers.restore'),
+                              saving: t('adminUsers.saving'),
+                              selfForbidden: t('adminUsers.selfForbidden'),
+                              lastAdmin: t('adminUsers.lastAdmin'),
+                              saveFailed: t('adminUsers.saveFailed'),
+                            }}
+                          />
                         </td>
                       </tr>
                     ))}

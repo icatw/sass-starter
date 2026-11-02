@@ -18,6 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 
+	"github.com/icatw/saas-starter/services/api/internal/app"
 	"github.com/icatw/saas-starter/services/api/internal/httpx"
 )
 
@@ -177,6 +178,24 @@ func TestAuthenticationAndAdminAuthorization(t *testing.T) {
 		r.ServeHTTP(response, request)
 		if response.Code != http.StatusForbidden {
 			t.Fatalf("got %d, want 403", response.Code)
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("regular user cannot update user status", func(t *testing.T) {
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, email, name, role, email_verified, disabled FROM users WHERE id = $1")).
+			WithArgs("user-1").WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name", "role", "email_verified", "disabled"}).AddRow("user-1", "user@example.test", "User", "user", true, false))
+		r := testRouter(db, keyset)
+		request := httptest.NewRequest(http.MethodPatch, "/v1/admin/users/user-2", strings.NewReader(`{"disabled":true}`))
+		request.Header.Set("Authorization", "Bearer "+signedTestJWT(t, privateKey, "user-1", time.Now().Add(time.Minute)))
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+		r.ServeHTTP(response, request)
+		if response.Code != http.StatusForbidden {
+			t.Fatalf("got %d, want 403: %s", response.Code, response.Body.String())
 		}
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Fatal(err)
@@ -345,20 +364,87 @@ func TestAuthenticationAndAdminAuthorization(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+	t.Run("admin can disable a user and revoke sessions", func(t *testing.T) {
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+		createdAt := time.Date(2026, time.January, 10, 12, 0, 0, 0, time.UTC)
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, email, name, role, email_verified, disabled FROM users WHERE id = $1")).
+			WithArgs("admin-1").WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name", "role", "email_verified", "disabled"}).AddRow("admin-1", "admin@example.test", "Admin", "admin", true, false))
+		mock.ExpectBegin()
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, name, email, COALESCE(role, 'user'), email_verified,")).
+			WithArgs("user-1").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "email", "role", "email_verified", "disabled", "created_at"}).AddRow("user-1", "User", "user@example.test", "user", true, false, createdAt))
+		mock.ExpectQuery(regexp.QuoteMeta("UPDATE users")).
+			WithArgs(true, "user-1").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "email", "role", "email_verified", "disabled", "created_at"}).AddRow("user-1", "User", "user@example.test", "user", true, true, createdAt))
+		mock.ExpectExec(regexp.QuoteMeta("DELETE FROM sessions WHERE user_id = $1")).
+			WithArgs("user-1").WillReturnResult(sqlmock.NewResult(0, 2))
+		mock.ExpectCommit()
+		r := testRouter(db, keyset)
+		request := httptest.NewRequest(http.MethodPatch, "/v1/admin/users/user-1", strings.NewReader(`{"disabled":true}`))
+		request.Header.Set("Authorization", "Bearer "+signedTestJWT(t, privateKey, "admin-1", time.Now().Add(time.Minute)))
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+		r.ServeHTTP(response, request)
+		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"disabled":true`) {
+			t.Fatalf("unexpected disable response %d: %s", response.Code, response.Body.String())
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("admin cannot disable self", func(t *testing.T) {
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, email, name, role, email_verified, disabled FROM users WHERE id = $1")).
+			WithArgs("admin-1").WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name", "role", "email_verified", "disabled"}).AddRow("admin-1", "admin@example.test", "Admin", "admin", true, false))
+		r := testRouter(db, keyset)
+		request := httptest.NewRequest(http.MethodPatch, "/v1/admin/users/admin-1", strings.NewReader(`{"disabled":true}`))
+		request.Header.Set("Authorization", "Bearer "+signedTestJWT(t, privateKey, "admin-1", time.Now().Add(time.Minute)))
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+		r.ServeHTTP(response, request)
+		if response.Code != http.StatusForbidden {
+			t.Fatalf("got %d, want 403: %s", response.Code, response.Body.String())
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("cannot disable the last active admin", func(t *testing.T) {
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+		createdAt := time.Date(2026, time.January, 10, 12, 0, 0, 0, time.UTC)
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, email, name, role, email_verified, disabled FROM users WHERE id = $1")).
+			WithArgs("admin-1").WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name", "role", "email_verified", "disabled"}).AddRow("admin-1", "admin@example.test", "Admin", "admin", true, false))
+		mock.ExpectBegin()
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, name, email, COALESCE(role, 'user'), email_verified,")).
+			WithArgs("admin-2").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "email", "role", "email_verified", "disabled", "created_at"}).AddRow("admin-2", "Other Admin", "admin2@example.test", "admin", true, false, createdAt))
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM users")).
+			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+		mock.ExpectRollback()
+		r := testRouter(db, keyset)
+		request := httptest.NewRequest(http.MethodPatch, "/v1/admin/users/admin-2", strings.NewReader(`{"disabled":true}`))
+		request.Header.Set("Authorization", "Bearer "+signedTestJWT(t, privateKey, "admin-1", time.Now().Add(time.Minute)))
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+		r.ServeHTTP(response, request)
+		if response.Code != http.StatusConflict || !strings.Contains(response.Body.String(), "LAST_ADMIN") {
+			t.Fatalf("got %d, want 409 LAST_ADMIN: %s", response.Code, response.Body.String())
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
 func testRouter(db *sql.DB, jwks keyfunc.Keyfunc) *gin.Engine {
-	r := gin.New()
-	r.Use(httpx.RequestID())
-	protected := r.Group("/v1", authenticate(db, jwks, testIssuer))
-	protected.GET("/me", func(c *gin.Context) { c.JSON(http.StatusOK, c.MustGet("user")) })
-	protected.GET("/admin/health", requireAdmin(), func(c *gin.Context) { c.Status(http.StatusOK) })
-	protected.GET("/admin/users", requireAdmin(), listAdminUsers(db))
-	protected.GET("/tasks", listTasks(db))
-	protected.POST("/tasks", createTask(db))
-	protected.PATCH("/tasks/:taskId", updateTask(db))
-	protected.DELETE("/tasks/:taskId", deleteTask(db))
-	return r
+	return app.NewRouter(app.Options{
+		DB:        db,
+		JWKS:      jwks,
+		IssuerURL: testIssuer,
+		Middleware: []gin.HandlerFunc{
+			httpx.RequestID(),
+		},
+	})
 }
 
 func signedTestJWT(t *testing.T, privateKey ed25519.PrivateKey, subject string, expires time.Time) string {

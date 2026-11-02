@@ -50,6 +50,13 @@ export const zhCN: Messages = {
     loadFailed: '无法加载用户目录，请刷新页面重试。',
     roleUser: '用户',
     roleAdmin: '管理员',
+    actions: '操作',
+    disable: '停用',
+    restore: '恢复',
+    saving: '处理中…',
+    selfForbidden: '不能修改自己的账号状态',
+    lastAdmin: '不能停用最后一个可用管理员',
+    saveFailed: '无法更新账号状态，请刷新后重试。',
   },
   tasks: {
     title: '我的任务',
