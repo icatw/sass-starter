@@ -21,4 +21,4 @@ API 统一错误体为 `{ code, message, requestId }`，每个响应都会回写
 go run ./cmd/promote-admin verified@example.com
 ```
 
-当前已拆出 `adminusers` 与可移除的 `tasks` 示例模块；新增业务时继续按领域扩展，不要把处理器继续堆回 `cmd/server/main.go`。
+当前已拆出 `adminusers`、`auditlogs` 与可移除的 `tasks` 示例模块；新增业务时继续按领域扩展，不要把处理器继续堆回 `cmd/server/main.go`。

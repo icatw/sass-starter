@@ -58,6 +58,24 @@ export const zhCN: Messages = {
     lastAdmin: '不能停用最后一个可用管理员',
     saveFailed: '无法更新账号状态，请刷新后重试。',
   },
+  auditLogs: {
+    title: '审计日志',
+    description: '查看接口记录的近期管理操作。',
+    latest: '最多显示最近 100 条审计事件。',
+    createdAt: '时间',
+    actor: '操作者',
+    action: '动作',
+    resource: '资源',
+    requestId: '请求 ID',
+    metadata: '详情',
+    empty: '还没有管理操作记录。',
+    loadFailed: '无法加载审计日志，请刷新页面重试。',
+    actions: {
+      userDisable: '停用用户',
+      userRestore: '恢复用户',
+    },
+  },
+
   tasks: {
     title: '我的任务',
     description: '用于展示个人账户数据链路的轻量示例功能。',
@@ -137,7 +155,7 @@ export const zhCN: Messages = {
       auditLogs: {
         title: '审计日志',
         description: '所有管理操作，可搜索、可导出。',
-        planned: ['支持筛选的事件流', '操作者与资源下钻', 'CSV 导出'],
+        planned: ['按操作者/动作筛选', '资源下钻', 'CSV 导出'],
       },
       settings: {
         title: '设置',
