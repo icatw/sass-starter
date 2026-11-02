@@ -49,6 +49,13 @@ export const en = {
     loadFailed: 'Could not load the user directory. Refresh the page to try again.',
     roleUser: 'User',
     roleAdmin: 'Admin',
+    actions: 'Actions',
+    disable: 'Disable',
+    restore: 'Restore',
+    saving: 'Working…',
+    selfForbidden: 'You cannot change your own status',
+    lastAdmin: 'Cannot disable the last active administrator',
+    saveFailed: 'Could not update account status. Refresh and try again.',
   },
   tasks: {
     title: 'My tasks',

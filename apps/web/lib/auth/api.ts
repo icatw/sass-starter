@@ -14,11 +14,27 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
   }
 
   const { token } = await auth.api.getToken({ headers: requestHeaders })
-  const api = createApiClient(getWebEnv().apiInternalURL, token)
+  const env = getWebEnv()
+  const api = createApiClient(env.apiInternalURL, token, env.authURL)
   const { data, error, response } = await api.GET('/v1/admin/users')
 
   if (!response.ok || error || !data) {
     throw new Error(`Go API user directory request failed with status ${response.status}`)
   }
   return data.users
+}
+
+export async function getAdminApi() {
+  const requestHeaders = await headers()
+  const session = await auth.api.getSession({ headers: requestHeaders })
+  if (!session || session.user.disabled || session.user.role !== 'admin') {
+    throw new Error('An active administrator session is required')
+  }
+
+  const { token } = await auth.api.getToken({ headers: requestHeaders })
+  const env = getWebEnv()
+  return {
+    api: createApiClient(env.apiInternalURL, token, env.authURL),
+    actorId: session.user.id,
+  }
 }
