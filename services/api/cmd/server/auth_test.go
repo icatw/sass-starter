@@ -17,6 +17,8 @@ import (
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/icatw/saas-starter/services/api/internal/httpx"
 )
 
 const testIssuer = "http://auth.example.test"
@@ -47,6 +49,16 @@ func TestAuthenticationAndAdminAuthorization(t *testing.T) {
 		r.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/v1/me", nil))
 		if response.Code != http.StatusUnauthorized {
 			t.Fatalf("got %d, want 401", response.Code)
+		}
+		if response.Header().Get(httpx.HeaderRequestID) == "" {
+			t.Fatal("expected X-Request-Id response header")
+		}
+		var body httpx.ErrorBody
+		if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+			t.Fatal(err)
+		}
+		if body.Code != "UNAUTHENTICATED" || body.RequestID == "" {
+			t.Fatalf("unexpected error body: %+v", body)
 		}
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Fatal(err)
@@ -276,6 +288,7 @@ func TestAuthenticationAndAdminAuthorization(t *testing.T) {
 
 func testRouter(db *sql.DB, jwks keyfunc.Keyfunc) *gin.Engine {
 	r := gin.New()
+	r.Use(httpx.RequestID())
 	protected := r.Group("/v1", authenticate(db, jwks, testIssuer))
 	protected.GET("/me", func(c *gin.Context) { c.JSON(http.StatusOK, c.MustGet("user")) })
 	protected.GET("/admin/health", requireAdmin(), func(c *gin.Context) { c.Status(http.StatusOK) })

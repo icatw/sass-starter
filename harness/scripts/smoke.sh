@@ -5,9 +5,15 @@ api_url="${API_INTERNAL_URL:-http://localhost:8080}"
 
 if command -v curl >/dev/null 2>&1; then
 	if curl --fail --silent --show-error "$api_url/healthz" >/dev/null; then
-		echo "API health smoke passed"
+		echo "API liveness smoke passed"
 	else
 		echo "API health smoke skipped or failed: $api_url/healthz"
+		exit 1
+	fi
+	if curl --fail --silent --show-error "$api_url/readyz" >/dev/null; then
+		echo "API readiness smoke passed"
+	else
+		echo "API readiness smoke failed: $api_url/readyz"
 		exit 1
 	fi
 else

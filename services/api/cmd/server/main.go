@@ -6,8 +6,10 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -19,6 +21,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/icatw/saas-starter/services/api/internal/config"
+	"github.com/icatw/saas-starter/services/api/internal/httpx"
 )
 
 type user struct {
@@ -57,7 +60,7 @@ func listTasks(db *sql.DB) gin.HandlerFunc {
 			FROM tasks WHERE user_id = $1
 			ORDER BY updated_at DESC, id DESC LIMIT 100`, currentUserID(c))
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "message": "Unable to load tasks"})
+			httpx.AbortInternal(c, "Unable to load tasks")
 			return
 		}
 		defer rows.Close()
@@ -65,13 +68,13 @@ func listTasks(db *sql.DB) gin.HandlerFunc {
 		for rows.Next() {
 			var current task
 			if err := rows.Scan(&current.ID, &current.Title, &current.Completed, &current.CreatedAt, &current.UpdatedAt); err != nil {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "message": "Unable to load tasks"})
+				httpx.AbortInternal(c, "Unable to load tasks")
 				return
 			}
 			tasks = append(tasks, current)
 		}
 		if err := rows.Err(); err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "message": "Unable to load tasks"})
+			httpx.AbortInternal(c, "Unable to load tasks")
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"tasks": tasks})
@@ -85,17 +88,17 @@ func createTask(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input request
 		if err := c.ShouldBindJSON(&input); err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"code": "INVALID_TASK", "message": "A task title is required"})
+			httpx.AbortBadRequest(c, "INVALID_TASK", "A task title is required")
 			return
 		}
 		input.Title = strings.TrimSpace(input.Title)
 		if length := utf8.RuneCountInString(input.Title); length < 1 || length > 200 {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"code": "INVALID_TASK", "message": "Task title must contain 1 to 200 characters"})
+			httpx.AbortBadRequest(c, "INVALID_TASK", "Task title must contain 1 to 200 characters")
 			return
 		}
 		idBytes := make([]byte, 16)
 		if _, err := rand.Read(idBytes); err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "message": "Unable to create task"})
+			httpx.AbortInternal(c, "Unable to create task")
 			return
 		}
 		id := hex.EncodeToString(idBytes)
@@ -106,7 +109,7 @@ func createTask(db *sql.DB) gin.HandlerFunc {
 			RETURNING id, title, completed, created_at, updated_at`, id, currentUserID(c), input.Title).
 			Scan(&created.ID, &created.Title, &created.Completed, &created.CreatedAt, &created.UpdatedAt)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "message": "Unable to create task"})
+			httpx.AbortInternal(c, "Unable to create task")
 			return
 		}
 		c.JSON(http.StatusCreated, gin.H{"task": created})
@@ -120,7 +123,7 @@ func updateTask(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input request
 		if err := c.ShouldBindJSON(&input); err != nil || input.Completed == nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"code": "INVALID_TASK", "message": "A completion state is required"})
+			httpx.AbortBadRequest(c, "INVALID_TASK", "A completion state is required")
 			return
 		}
 		var updated task
@@ -130,11 +133,11 @@ func updateTask(db *sql.DB) gin.HandlerFunc {
 			RETURNING id, title, completed, created_at, updated_at`, *input.Completed, c.Param("taskId"), currentUserID(c)).
 			Scan(&updated.ID, &updated.Title, &updated.Completed, &updated.CreatedAt, &updated.UpdatedAt)
 		if errors.Is(err, sql.ErrNoRows) {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"code": "TASK_NOT_FOUND", "message": "Task not found"})
+			httpx.AbortNotFound(c, "TASK_NOT_FOUND", "Task not found")
 			return
 		}
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "message": "Unable to update task"})
+			httpx.AbortInternal(c, "Unable to update task")
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"task": updated})
@@ -145,16 +148,16 @@ func deleteTask(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		result, err := db.ExecContext(c.Request.Context(), `DELETE FROM tasks WHERE id = $1 AND user_id = $2`, c.Param("taskId"), currentUserID(c))
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "message": "Unable to delete task"})
+			httpx.AbortInternal(c, "Unable to delete task")
 			return
 		}
 		deleted, err := result.RowsAffected()
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "message": "Unable to delete task"})
+			httpx.AbortInternal(c, "Unable to delete task")
 			return
 		}
 		if deleted == 0 {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"code": "TASK_NOT_FOUND", "message": "Task not found"})
+			httpx.AbortNotFound(c, "TASK_NOT_FOUND", "Task not found")
 			return
 		}
 		c.Status(http.StatusNoContent)
@@ -170,7 +173,7 @@ func listAdminUsers(db *sql.DB) gin.HandlerFunc {
 			ORDER BY created_at DESC, id DESC
 			LIMIT 100`)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "message": "Unable to load users"})
+			httpx.AbortInternal(c, "Unable to load users")
 			return
 		}
 		defer rows.Close()
@@ -179,13 +182,13 @@ func listAdminUsers(db *sql.DB) gin.HandlerFunc {
 		for rows.Next() {
 			var current adminUser
 			if err := rows.Scan(&current.ID, &current.Name, &current.Email, &current.Role, &current.EmailVerified, &current.Disabled, &current.CreatedAt); err != nil {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "message": "Unable to load users"})
+				httpx.AbortInternal(c, "Unable to load users")
 				return
 			}
 			users = append(users, current)
 		}
 		if err := rows.Err(); err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "message": "Unable to load users"})
+			httpx.AbortInternal(c, "Unable to load users")
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"users": users})
@@ -197,7 +200,7 @@ func authenticate(db *sql.DB, jwks keyfunc.Keyfunc, issuer string) gin.HandlerFu
 		header := c.GetHeader("Authorization")
 		parts := strings.SplitN(header, " ", 2)
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || parts[1] == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"code": "UNAUTHENTICATED", "message": "Authentication required"})
+			httpx.AbortUnauthorized(c, "Authentication required")
 			return
 		}
 		claims := jwt.MapClaims{}
@@ -206,12 +209,12 @@ func authenticate(db *sql.DB, jwks keyfunc.Keyfunc, issuer string) gin.HandlerFu
 			jwt.WithIssuer(issuer), jwt.WithAudience("saas-api"), jwt.WithExpirationRequired(),
 			jwt.WithLeeway(5*time.Second))
 		if err != nil || token == nil || !token.Valid || claims["sub"] == nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"code": "UNAUTHENTICATED", "message": "Invalid or expired credential"})
+			httpx.AbortUnauthorized(c, "Invalid or expired credential")
 			return
 		}
 		sub, ok := claims["sub"].(string)
 		if !ok || sub == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"code": "UNAUTHENTICATED", "message": "Invalid subject"})
+			httpx.AbortUnauthorized(c, "Invalid subject")
 			return
 		}
 		var current user
@@ -219,11 +222,11 @@ func authenticate(db *sql.DB, jwks keyfunc.Keyfunc, issuer string) gin.HandlerFu
 		err = db.QueryRowContext(c.Request.Context(), `SELECT id, email, name, role, email_verified, disabled FROM users WHERE id = $1`, sub).
 			Scan(&current.ID, &current.Email, &current.Name, &current.Role, &verified, &disabled)
 		if errors.Is(err, sql.ErrNoRows) || (err == nil && (!verified || disabled)) {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"code": "UNAUTHENTICATED", "message": "Account is unavailable"})
+			httpx.AbortUnauthorized(c, "Account is unavailable")
 			return
 		}
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "INTERNAL_ERROR", "message": "Unable to load account"})
+			httpx.AbortInternal(c, "Unable to load account")
 			return
 		}
 		c.Set("user", current)
@@ -235,7 +238,7 @@ func requireAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		current := c.MustGet("user").(user)
 		if current.Role != "admin" {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"code": "FORBIDDEN", "message": "Administrator access required"})
+			httpx.AbortForbidden(c, "FORBIDDEN", "Administrator access required")
 			return
 		}
 		c.Next()
@@ -253,7 +256,7 @@ func requireSameOrigin(allowed string) gin.HandlerFunc {
 		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
 			origin, err := url.Parse(c.GetHeader("Origin"))
 			if err != nil || origin.Scheme+"://"+origin.Host != allowedOrigin {
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"code": "INVALID_ORIGIN", "message": "Request origin is not allowed"})
+				httpx.AbortForbidden(c, "INVALID_ORIGIN", "Request origin is not allowed")
 				return
 			}
 		}
@@ -263,7 +266,9 @@ func requireSameOrigin(allowed string) gin.HandlerFunc {
 
 func main() {
 	r := gin.New()
-	r.Use(gin.Logger(), gin.Recovery())
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	slog.SetDefault(logger)
+	r.Use(httpx.RequestID(), httpx.AccessLog(logger), httpx.Recovery(logger))
 	cfg, err := config.Load()
 	if err != nil {
 		panic(err)
@@ -284,12 +289,8 @@ func main() {
 		panic(err)
 	}
 
-	r.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status":  "ok",
-			"service": "api",
-		})
-	})
+	r.GET("/healthz", httpx.Liveness())
+	r.GET("/readyz", httpx.Readiness(db))
 	protected := r.Group("/v1", authenticate(db, keyset, cfg.IssuerURL))
 	protected.GET("/me", func(c *gin.Context) { c.JSON(http.StatusOK, c.MustGet("user")) })
 	protected.GET("/admin/health", requireAdmin(), func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })

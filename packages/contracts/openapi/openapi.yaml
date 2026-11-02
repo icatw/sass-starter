@@ -24,6 +24,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /readyz:
+    get:
+      operationId: getReadiness
+      summary: Check API readiness
+      tags: [system]
+      responses:
+        '200':
+          description: API dependencies are ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyResponse'
+        '503':
+          description: One or more dependencies are unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /v1/me:
     get:
       operationId: getCurrentUser
@@ -285,9 +303,25 @@ components:
         service:
           type: string
           example: api
+    ReadyResponse:
+      type: object
+      required: [status, service, checks]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        service:
+          type: string
+          example: api
+        checks:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            database: ok
     ErrorResponse:
       type: object
-      required: [code, message]
+      required: [code, message, requestId]
       properties:
         code:
           type: string
@@ -295,3 +329,6 @@ components:
         message:
           type: string
           example: Internal server error
+        requestId:
+          type: string
+          example: 0f1e2d3c4b5a6978
