@@ -75,6 +75,33 @@ export const en = {
     },
   },
 
+  settings: {
+    title: 'System Settings',
+    description: 'Read-only runtime configuration for this single-instance deployment.',
+    readOnlyNotice: 'This page is read-only. Secrets, SMTP credentials, and database connection strings are never shown.',
+    loadFailed: 'Could not load API settings. Refresh the page to try again.',
+    web: {
+      title: 'Web runtime',
+      description: 'Public configuration used by the Next.js app and Better Auth.',
+      appName: 'App name',
+      appURL: 'App URL',
+      authURL: 'Auth URL',
+      authEmailMode: 'Auth email mode',
+      appEnv: 'App environment',
+    },
+    api: {
+      title: 'API runtime',
+      description: 'Non-secret snapshot returned by the Go API.',
+      appEnv: 'API environment',
+      apiPort: 'API port',
+      issuerURL: 'JWT issuer',
+      audience: 'JWT audience',
+      databaseConfigured: 'Database configured',
+      databaseYes: 'Yes',
+      databaseNo: 'No',
+    },
+  },
+
   tasks: {
     title: 'My tasks',
     description: 'A small example feature for your own account.',
@@ -162,9 +189,9 @@ export const en = {
         planned: ['Filters by actor/action', 'Resource drill-down', 'CSV export'],
       },
       settings: {
-        title: 'Settings',
-        description: 'Workspace, branding, API keys, and integrations.',
-        planned: ['Workspace profile', 'API keys', 'Webhook endpoints'],
+        title: 'System Settings',
+        description: 'Read-only runtime configuration for Web and API.',
+        planned: ['Editable workspace branding', 'API keys', 'Webhook endpoints'],
       },
     },
   },

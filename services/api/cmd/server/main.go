@@ -46,6 +46,8 @@ func main() {
 		DB:         db,
 		JWKS:       keyset,
 		IssuerURL:  cfg.IssuerURL,
+		AppEnv:     string(cfg.AppEnv),
+		APIPort:    cfg.Port,
 		SameOrigin: true,
 		Middleware: []gin.HandlerFunc{
 			httpx.RequestID(),

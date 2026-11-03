@@ -76,6 +76,33 @@ export const zhCN: Messages = {
     },
   },
 
+  settings: {
+    title: '系统设置',
+    description: '查看当前单实例部署的只读运行配置。',
+    readOnlyNotice: '本页只读展示。不会显示密钥、SMTP 凭据或数据库连接串。',
+    loadFailed: '无法加载 API 设置，请刷新页面重试。',
+    web: {
+      title: 'Web 运行时',
+      description: 'Next.js 与 Better Auth 使用的公开配置。',
+      appName: '应用名称',
+      appURL: '应用地址',
+      authURL: '认证地址',
+      authEmailMode: '认证邮件模式',
+      appEnv: '应用环境',
+    },
+    api: {
+      title: 'API 运行时',
+      description: 'Go API 返回的非敏感配置快照。',
+      appEnv: 'API 环境',
+      apiPort: 'API 端口',
+      issuerURL: 'JWT 签发方',
+      audience: 'JWT 受众',
+      databaseConfigured: '数据库已配置',
+      databaseYes: '是',
+      databaseNo: '否',
+    },
+  },
+
   tasks: {
     title: '我的任务',
     description: '用于展示个人账户数据链路的轻量示例功能。',
@@ -163,9 +190,9 @@ export const zhCN: Messages = {
         planned: ['按操作者/动作筛选', '资源下钻', 'CSV 导出'],
       },
       settings: {
-        title: '设置',
-        description: '工作区、品牌、API 密钥与集成。',
-        planned: ['工作区资料', 'API 密钥', 'Webhook 端点'],
+        title: '系统设置',
+        description: '只读查看 Web 与 API 的运行配置。',
+        planned: ['可编辑工作区品牌', 'API 密钥', 'Webhook 端点'],
       },
     },
   },

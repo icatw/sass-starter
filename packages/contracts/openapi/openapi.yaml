@@ -207,6 +207,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /v1/admin/settings:
+    get:
+      operationId: getAdminSettings
+      summary: Get non-secret runtime settings for administrators
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Runtime settings snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSettingsResponse'
+        '401':
+          description: Missing or invalid internal credential
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Administrator role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /v1/tasks:
     get:
       operationId: listTasks
@@ -414,6 +440,23 @@ components:
           additionalProperties: true
         requestId: { type: string }
         createdAt: { type: string, format: date-time }
+    AdminSettingsResponse:
+      type: object
+      required: [settings]
+      properties:
+        settings:
+          $ref: '#/components/schemas/AdminSettings'
+    AdminSettings:
+      type: object
+      required: [appEnv, apiPort, issuerURL, audience, databaseConfigured]
+      properties:
+        appEnv:
+          type: string
+          enum: [development, test, production]
+        apiPort: { type: string }
+        issuerURL: { type: string, format: uri }
+        audience: { type: string }
+        databaseConfigured: { type: boolean }
     Task:
       type: object
       required: [id, title, completed, createdAt, updatedAt]
