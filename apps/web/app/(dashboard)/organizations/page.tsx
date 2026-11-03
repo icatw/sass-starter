@@ -1,5 +1,5 @@
-import { ModulePage } from '@/components/shared/module-page'
+import { redirect } from 'next/navigation'
 
-export default function Page() {
-  return <ModulePage itemKey='organizations' />
+export default function OrganizationsAliasPage() {
+  redirect('/admin/organizations')
 }

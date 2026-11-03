@@ -93,6 +93,11 @@ export const zhCN: Messages = {
     delete: '删除任务',
   },
   nav: {
+    availability: {
+      available: '可用',
+      demo: '演示',
+      planned: '未实现',
+    },
     groups: {
       platform: '平台',
       revenue: '营收',
@@ -104,7 +109,7 @@ export const zhCN: Messages = {
       users: {
         title: '用户',
         description: '查看产品账号、邮箱验证和访问状态。',
-        planned: ['搜索和筛选', '角色管理', '账号状态管理'],
+        planned: ['搜索和筛选', '角色管理'],
       },
       organizations: {
         title: '组织',
@@ -154,7 +159,7 @@ export const zhCN: Messages = {
       },
       auditLogs: {
         title: '审计日志',
-        description: '所有管理操作，可搜索、可导出。',
+        description: '近期管理操作的基础审计证据。',
         planned: ['按操作者/动作筛选', '资源下钻', 'CSV 导出'],
       },
       settings: {
@@ -403,6 +408,9 @@ export const zhCN: Messages = {
       payments: '支付',
     },
   },
+  overviewStatus: {
+    demoBanner: '仅演示数据。本概览使用内存 Mock，尚未连接真实计费或运营 API。',
+  },
   errorState: {
     title: '数据加载失败',
     fallback: '请求失败，请检查网络连接后重试。',
@@ -415,8 +423,9 @@ export const zhCN: Messages = {
     noRetryableJobs: '没有可重试的任务：所有失败任务均已达到最大重试次数',
   },
   scaffold: {
-    title: '{page}模块已搭好框架',
-    description: '路由、导航和布局均已接好。请将模块 UI 放入',
+    title: '{page}尚未实现',
+    description: '这个导航入口已预留，但功能尚未规格化和实现；当前页面只是占位。',
+    plannedHeading: '仍待实现',
   },
   notFound: {
     title: '页面不存在',

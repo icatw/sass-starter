@@ -92,6 +92,11 @@ export const en = {
     delete: 'Delete task',
   },
   nav: {
+    availability: {
+      available: 'Available',
+      demo: 'Demo',
+      planned: 'Not implemented',
+    },
     groups: {
       platform: 'Platform',
       revenue: 'Revenue',
@@ -103,7 +108,7 @@ export const en = {
       users: {
         title: 'Users',
         description: 'Browse accounts, email verification, and access status.',
-        planned: ['Search and filters', 'Role management', 'Account status controls'],
+        planned: ['Search and filters', 'Role management'],
       },
       organizations: {
         title: 'Organizations',
@@ -153,7 +158,7 @@ export const en = {
       },
       auditLogs: {
         title: 'Audit Logs',
-        description: 'Every administrative action, searchable and exportable.',
+        description: 'Recent administrative actions with basic evidence.',
         planned: ['Filters by actor/action', 'Resource drill-down', 'CSV export'],
       },
       settings: {
@@ -402,6 +407,9 @@ export const en = {
       payments: 'Payments',
     },
   },
+  overviewStatus: {
+    demoBanner: 'Demo data only. This overview uses in-memory mocks and is not connected to live billing or operations APIs.',
+  },
   errorState: {
     title: 'Could not load data',
     fallback: 'The request failed. Check your connection and try again.',
@@ -414,8 +422,9 @@ export const en = {
     noRetryableJobs: 'No retryable jobs: all failed jobs reached max attempts',
   },
   scaffold: {
-    title: '{page} is scaffolded',
-    description: 'The route, navigation, and layout are wired up. Drop the module UI into',
+    title: '{page} is not implemented yet',
+    description: 'This navigation entry is reserved. The page is only a placeholder until the feature is specified and built.',
+    plannedHeading: 'Still planned',
   },
   notFound: {
     title: 'Page not found',

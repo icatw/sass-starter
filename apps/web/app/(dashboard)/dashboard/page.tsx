@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function OverviewPage() {
-  const { messages } = await getI18n()
+  const { messages, t } = await getI18n()
   const copy = messages.nav.items.overview
 
   return (
@@ -26,7 +26,7 @@ export default async function OverviewPage() {
         actions={<OverviewActions />}
       />
       <div role="status" className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-foreground">
-        <strong>DEMO DATA</strong> · 页面数据来自内存 Mock，尚未连接真实 API；当前 Dashboard 也尚未接入登录与后端授权。
+        {t('overviewStatus.demoBanner')}
       </div>
       <KpiCards />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
