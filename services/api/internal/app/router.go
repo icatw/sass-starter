@@ -11,6 +11,7 @@ import (
 	"github.com/icatw/saas-starter/services/api/internal/httpx"
 	"github.com/icatw/saas-starter/services/api/internal/modules/adminusers"
 	"github.com/icatw/saas-starter/services/api/internal/modules/auditlogs"
+	"github.com/icatw/saas-starter/services/api/internal/modules/settings"
 	"github.com/icatw/saas-starter/services/api/internal/modules/tasks"
 )
 
@@ -19,6 +20,8 @@ type Options struct {
 	DB         *sql.DB
 	JWKS       keyfunc.Keyfunc
 	IssuerURL  string
+	AppEnv     string
+	APIPort    string
 	SameOrigin bool
 	Middleware []gin.HandlerFunc
 }
@@ -46,6 +49,13 @@ func NewRouter(opts Options) *gin.Engine {
 	protected.GET("/admin/users", authz.RequireAdmin(), adminusers.List(opts.DB))
 	protected.PATCH("/admin/users/:userId", authz.RequireAdmin(), adminusers.UpdateStatus(opts.DB))
 	protected.GET("/admin/audit-logs", authz.RequireAdmin(), auditlogs.List(opts.DB))
+	protected.GET("/admin/settings", authz.RequireAdmin(), settings.Get(settings.Snapshot{
+		AppEnv:             opts.AppEnv,
+		APIPort:            opts.APIPort,
+		IssuerURL:          opts.IssuerURL,
+		Audience:           "saas-api",
+		DatabaseConfigured: opts.DB != nil,
+	}))
 	protected.GET("/tasks", tasks.List(opts.DB))
 	protected.POST("/tasks", tasks.Create(opts.DB))
 	protected.PATCH("/tasks/:taskId", tasks.Update(opts.DB))

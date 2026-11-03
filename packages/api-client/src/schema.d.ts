@@ -123,6 +123,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get non-secret runtime settings for administrators */
+        get: operations["getAdminSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tasks": {
         parameters: {
             query?: never;
@@ -205,6 +222,18 @@ export interface components {
             requestId: string;
             /** Format: date-time */
             createdAt: string;
+        };
+        AdminSettingsResponse: {
+            settings: components["schemas"]["AdminSettings"];
+        };
+        AdminSettings: {
+            /** @enum {string} */
+            appEnv: "development" | "test" | "production";
+            apiPort: string;
+            /** Format: uri */
+            issuerURL: string;
+            audience: string;
+            databaseConfigured: boolean;
         };
         Task: {
             id: string;
@@ -540,6 +569,44 @@ export interface operations {
             };
             /** @description Unable to load audit logs */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getAdminSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Runtime settings snapshot */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSettingsResponse"];
+                };
+            };
+            /** @description Missing or invalid internal credential */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Administrator role required */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

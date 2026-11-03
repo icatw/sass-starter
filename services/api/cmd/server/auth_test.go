@@ -432,6 +432,43 @@ func TestAuthenticationAndAdminAuthorization(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+	t.Run("administrator can read runtime settings", func(t *testing.T) {
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, email, name, role, email_verified, disabled FROM users WHERE id = $1")).
+			WithArgs("admin-1").WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name", "role", "email_verified", "disabled"}).AddRow("admin-1", "admin@example.test", "Admin", "admin", true, false))
+		r := testRouter(db, keyset)
+		request := httptest.NewRequest(http.MethodGet, "/v1/admin/settings", nil)
+		request.Header.Set("Authorization", "Bearer "+signedTestJWT(t, privateKey, "admin-1", time.Now().Add(time.Minute)))
+		response := httptest.NewRecorder()
+		r.ServeHTTP(response, request)
+		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"issuerURL":"http://auth.example.test"`) {
+			t.Fatalf("unexpected settings response %d: %s", response.Code, response.Body.String())
+		}
+		if strings.Contains(response.Body.String(), "password") || strings.Contains(response.Body.String(), "secret") {
+			t.Fatalf("settings response leaked sensitive fields: %s", response.Body.String())
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("regular user cannot read runtime settings", func(t *testing.T) {
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT id, email, name, role, email_verified, disabled FROM users WHERE id = $1")).
+			WithArgs("user-1").WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name", "role", "email_verified", "disabled"}).AddRow("user-1", "user@example.test", "User", "user", true, false))
+		r := testRouter(db, keyset)
+		request := httptest.NewRequest(http.MethodGet, "/v1/admin/settings", nil)
+		request.Header.Set("Authorization", "Bearer "+signedTestJWT(t, privateKey, "user-1", time.Now().Add(time.Minute)))
+		response := httptest.NewRecorder()
+		r.ServeHTTP(response, request)
+		if response.Code != http.StatusForbidden {
+			t.Fatalf("got %d, want 403", response.Code)
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatal(err)
+		}
+	})
 	t.Run("admin cannot disable self", func(t *testing.T) {
 		db, mock, _ := sqlmock.New()
 		defer db.Close()
@@ -482,6 +519,8 @@ func testRouter(db *sql.DB, jwks keyfunc.Keyfunc) *gin.Engine {
 		DB:        db,
 		JWKS:      jwks,
 		IssuerURL: testIssuer,
+		AppEnv:    "test",
+		APIPort:   "8080",
 		Middleware: []gin.HandlerFunc{
 			httpx.RequestID(),
 		},

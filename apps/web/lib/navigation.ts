@@ -73,7 +73,7 @@ export const navGroups: NavGroup[] = [
     key: 'system',
     items: [
       { key: 'auditLogs', href: '/audit-logs', icon: ScrollText, availability: 'available' },
-      { key: 'settings', href: '/settings', icon: Settings, availability: 'planned' },
+      { key: 'settings', href: '/settings', icon: Settings, availability: 'available' },
     ],
   },
 ]
