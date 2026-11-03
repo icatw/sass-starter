@@ -1,5 +1,5 @@
-import { ModulePage } from '@/components/shared/module-page'
+import { redirect } from 'next/navigation'
 
-export default function Page() {
-  return <ModulePage itemKey='subscriptions' />
+export default function AdminSubscriptionsAliasPage() {
+  redirect('/billing/subscriptions')
 }

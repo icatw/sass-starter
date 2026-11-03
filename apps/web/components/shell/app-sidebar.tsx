@@ -6,7 +6,6 @@ import { Boxes, ChevronRight } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
@@ -28,13 +27,23 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Badge } from '@/components/ui/badge'
 import { navGroups, type NavItem } from '@/lib/navigation'
-import { SidebarUsageMeter } from '@/components/shell/sidebar-usage-meter'
 import { useI18n } from '@/components/providers/i18n-provider'
 
 function isActivePath(pathname: string, href: string) {
   if (href === '/') return pathname === '/'
   return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+function AvailabilityBadge({ availability }: { availability: NavItem['availability'] }) {
+  const { t } = useI18n()
+  if (availability === 'available') return null
+  return (
+    <Badge variant={availability === 'demo' ? 'secondary' : 'outline'} className="ml-auto shrink-0 text-[10px]">
+      {availability === 'demo' ? t('nav.availability.demo') : t('nav.availability.planned')}
+    </Badge>
+  )
 }
 
 function NavItemWithChildren({ item, pathname }: { item: NavItem; pathname: string }) {
@@ -55,8 +64,9 @@ function NavItemWithChildren({ item, pathname }: { item: NavItem; pathname: stri
             <DropdownMenuGroup>
               <DropdownMenuLabel>{t(`nav.items.${item.key}.title`)}</DropdownMenuLabel>
               {children.map((child) => (
-                <DropdownMenuItem key={child.href} render={<Link href={child.href} />}>
-                  {t(`nav.items.${child.key}.title`)}
+                <DropdownMenuItem key={child.href} render={<Link href={child.href} />} className="justify-between gap-2">
+                  <span>{t(`nav.items.${child.key}.title`)}</span>
+                  <AvailabilityBadge availability={child.availability} />
                 </DropdownMenuItem>
               ))}
             </DropdownMenuGroup>
@@ -71,7 +81,8 @@ function NavItemWithChildren({ item, pathname }: { item: NavItem; pathname: stri
       <CollapsibleTrigger render={<SidebarMenuButton />}>
         <item.icon />
         <span>{t(`nav.items.${item.key}.title`)}</span>
-        <ChevronRight className="ml-auto transition-transform duration-200 group-data-[panel-open]/menu-button:rotate-90" />
+        <AvailabilityBadge availability={item.availability} />
+        <ChevronRight className="transition-transform duration-200 group-data-[panel-open]/menu-button:rotate-90" />
       </CollapsibleTrigger>
       <CollapsibleContent>
         <SidebarMenuSub>
@@ -79,6 +90,7 @@ function NavItemWithChildren({ item, pathname }: { item: NavItem; pathname: stri
             <SidebarMenuSubItem key={child.href}>
               <SidebarMenuSubButton isActive={pathname === child.href} render={<Link href={child.href} />}>
                 <span>{t(`nav.items.${child.key}.title`)}</span>
+                <AvailabilityBadge availability={child.availability} />
               </SidebarMenuSubButton>
             </SidebarMenuSubItem>
           ))}
@@ -127,6 +139,7 @@ export function AppSidebar() {
                     >
                       <item.icon />
                       <span>{t(`nav.items.${item.key}.title`)}</span>
+                      <AvailabilityBadge availability={item.availability} />
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ),
@@ -135,10 +148,6 @@ export function AppSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
-
-      <SidebarFooter>
-        <SidebarUsageMeter />
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )

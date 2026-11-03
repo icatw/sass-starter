@@ -90,6 +90,13 @@ export function CommandSearch() {
                             <span>
                               {itemTitle} / {childTitle}
                             </span>
+                            {child.availability !== 'available' ? (
+                              <span className="ml-auto text-xs text-muted-foreground">
+                                {child.availability === 'demo'
+                                  ? t('nav.availability.demo')
+                                  : t('nav.availability.planned')}
+                              </span>
+                            ) : null}
                           </CommandItem>
                         )
                       })
@@ -101,6 +108,13 @@ export function CommandSearch() {
                         >
                           <item.icon />
                           <span>{itemTitle}</span>
+                          {item.availability !== 'available' ? (
+                            <span className="ml-auto text-xs text-muted-foreground">
+                              {item.availability === 'demo'
+                                ? t('nav.availability.demo')
+                                : t('nav.availability.planned')}
+                            </span>
+                          ) : null}
                         </CommandItem>,
                       ]
                 })}
